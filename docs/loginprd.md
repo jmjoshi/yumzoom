@@ -1,5 +1,5 @@
 Project Requirements Document: The YumZoom Website
-The following table outlines the detailed functional requirements of The YumZoom website.
+The following table outlines the detailed functional requirements of The login page
 
 Requirement ID | Description | User Story | Expected Behavior/Outcome
 ---|---|---|---
