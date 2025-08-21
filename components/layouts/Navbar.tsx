@@ -40,6 +40,7 @@ export function Navbar() {
     ...(user ? [
       { name: 'Dashboard', href: ROUTES.DASHBOARD },
       { name: 'Family', href: ROUTES.FAMILY },
+      { name: 'Social', href: ROUTES.SOCIAL },
       { name: 'Analytics', href: ROUTES.ANALYTICS },
       { name: 'Admin', href: ROUTES.ADMIN_RESTAURANTS }
     ] : []),

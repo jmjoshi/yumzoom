@@ -9,6 +9,7 @@ export const ROUTES = {
   RESTAURANTS: '/restaurants',
   FAMILY: '/family',
   ANALYTICS: '/analytics',
+  SOCIAL: '/social',
   PROFILE: '/profile',
   SETTINGS: '/settings',
   FAVORITES: '/favorites',

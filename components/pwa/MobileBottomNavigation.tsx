@@ -12,7 +12,8 @@ import {
   MapPin,
   Star,
   Camera,
-  BarChart3
+  BarChart3,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePWA } from './PWAProvider';
@@ -36,15 +37,15 @@ const navigationItems: NavigationItem[] = [
     icon: Search,
   },
   {
-    name: 'Analytics',
-    href: '/analytics',
-    icon: BarChart3,
+    name: 'Social',
+    href: '/social',
+    icon: MessageCircle,
     requireAuth: true,
   },
   {
-    name: 'Favorites',
-    href: '/favorites',
-    icon: Heart,
+    name: 'Analytics',
+    href: '/analytics',
+    icon: BarChart3,
     requireAuth: true,
   },
   {
