@@ -1,0 +1,325 @@
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import { useParams } from 'next/navigation';
+import Image from 'next/image';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
+import { MenuItemCard } from '@/components/restaurant/MenuItemCard';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Restaurant, MenuItemWithRatings, UserRating } from '@/types/restaurant';
+import { FamilyMember } from '@/types/user';
+import { MapPin, Phone, Globe } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+export default function RestaurantDetailPage() {
+  const params = useParams();
+  const { user } = useAuth();
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItemWithRatings[]>([]);
+  const [userRatings, setUserRatings] = useState<Record<string, UserRating[]>>({});
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUserData = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      // Fetch user's ratings for this restaurant
+      const { data: ratingsData, error: ratingsError } = await supabase
+        .from('ratings')
+        .select(`
+          *,
+          family_members (
+            id,
+            name,
+            relationship
+          )
+        `)
+        .eq('user_id', user.id)
+        .in('menu_item_id', menuItems.map(item => item.id));
+
+      if (ratingsError) throw ratingsError;
+
+      // Group ratings by menu item
+      const groupedRatings: Record<string, UserRating[]> = {};
+      ratingsData.forEach((rating: any) => {
+        if (!groupedRatings[rating.menu_item_id]) {
+          groupedRatings[rating.menu_item_id] = [];
+        }
+        groupedRatings[rating.menu_item_id].push({
+          ...rating,
+          family_member: rating.family_members,
+        });
+      });
+
+      setUserRatings(groupedRatings);
+
+      // Fetch family members
+      const { data: familyData, error: familyError } = await supabase
+        .from('family_members')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name');
+
+      if (familyError) throw familyError;
+      setFamilyMembers(familyData);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  }, [user, menuItems]);
+
+  const fetchRestaurantData = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // Fetch restaurant details
+      const { data: restaurantData, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('*')
+        .eq('id', params.id)
+        .single();
+
+      if (restaurantError) throw restaurantError;
+      setRestaurant(restaurantData);
+
+      // Fetch menu items with ratings
+      const { data: menuData, error: menuError } = await supabase
+        .from('menu_items')
+        .select(`
+          *,
+          ratings (
+            id,
+            user_id,
+            rating,
+            family_member_id,
+            notes,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('restaurant_id', params.id)
+        .order('category, name');
+
+      if (menuError) throw menuError;
+
+      // Calculate average ratings for each menu item
+      const menuItemsWithAverage = menuData.map((item: any) => ({
+        ...item,
+        average_rating: item.ratings.length > 0
+          ? item.ratings.reduce((sum: number, rating: any) => sum + rating.rating, 0) / item.ratings.length
+          : 0,
+      }));
+
+      setMenuItems(menuItemsWithAverage);
+
+      // If user is logged in, fetch their ratings and family members
+      if (user) {
+        await fetchUserData();
+      }
+    } catch (error) {
+      console.error('Error fetching restaurant data:', error);
+      toast.error('Failed to load restaurant data');
+    } finally {
+      setLoading(false);
+    }
+  }, [params.id, user, fetchUserData]);
+
+  useEffect(() => {
+    if (params.id) {
+      fetchRestaurantData();
+    }
+  }, [params.id, fetchRestaurantData]);
+
+  const handleRate = async (menuItemId: string, rating: number, familyMemberId?: string) => {
+    if (!user) {
+      toast.error('Please sign in to rate items');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('ratings')
+        .insert({
+          user_id: user.id,
+          menu_item_id: menuItemId,
+          rating,
+          family_member_id: familyMemberId,
+        });
+
+      if (error) throw error;
+
+      toast.success('Rating submitted successfully!');
+      fetchRestaurantData(); // Refresh data
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      toast.error('Failed to submit rating');
+    }
+  };
+
+  const handleUpdateRating = async (ratingId: string, newRating: number) => {
+    try {
+      const { error } = await supabase
+        .from('ratings')
+        .update({ rating: newRating })
+        .eq('id', ratingId);
+
+      if (error) throw error;
+
+      toast.success('Rating updated successfully!');
+      fetchRestaurantData(); // Refresh data
+    } catch (error) {
+      console.error('Error updating rating:', error);
+      toast.error('Failed to update rating');
+    }
+  };
+
+  const handleDeleteRating = async (ratingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('ratings')
+        .delete()
+        .eq('id', ratingId);
+
+      if (error) throw error;
+
+      toast.success('Rating deleted successfully!');
+      fetchRestaurantData(); // Refresh data
+    } catch (error) {
+      console.error('Error deleting rating:', error);
+      toast.error('Failed to delete rating');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse">
+          <div className="h-64 bg-gray-200 rounded-lg mb-6"></div>
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-64 bg-gray-200 rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!restaurant) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Restaurant not found</h1>
+          <p className="text-gray-600">The restaurant you&apos;re looking for doesn&apos;t exist.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Group menu items by category
+  const groupedMenuItems = menuItems.reduce((acc, item) => {
+    const category = item.category || 'Other';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(item);
+    return acc;
+  }, {} as Record<string, MenuItemWithRatings[]>);
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Restaurant Header */}
+      <Card className="mb-8">
+        <div className="relative h-64 w-full">
+          <Image
+            src={restaurant.image_url || '/placeholder-restaurant.jpg'}
+            alt={restaurant.name}
+            fill
+            className="object-cover rounded-t-lg"
+          />
+        </div>
+        <CardHeader>
+          <CardTitle className="text-2xl">{restaurant.name}</CardTitle>
+          {restaurant.description && (
+            <p className="text-gray-600">{restaurant.description}</p>
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {restaurant.address && (
+              <div className="flex items-center space-x-2 text-gray-600">
+                <MapPin className="h-5 w-5" />
+                <span>{restaurant.address}</span>
+              </div>
+            )}
+            
+            {restaurant.phone && (
+              <div className="flex items-center space-x-2 text-gray-600">
+                <Phone className="h-5 w-5" />
+                <span>{restaurant.phone}</span>
+              </div>
+            )}
+            
+            {restaurant.website && (
+              <div className="flex items-center space-x-2 text-gray-600">
+                <Globe className="h-5 w-5" />
+                <a
+                  href={restaurant.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-600 hover:text-primary-800"
+                >
+                  Visit Website
+                </a>
+              </div>
+            )}
+          </div>
+          
+          {restaurant.cuisine_type && (
+            <div className="mt-4">
+              <span className="inline-block bg-primary-100 text-primary-800 px-3 py-1 rounded-full text-sm">
+                {restaurant.cuisine_type}
+              </span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Menu Items */}
+      <div className="space-y-8">
+        {Object.entries(groupedMenuItems).map(([category, items]) => (
+          <div key={category}>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{category}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {items.map((item) => (
+                <MenuItemCard
+                  key={item.id}
+                  menuItem={item}
+                  userRatings={userRatings[item.id] || []}
+                  familyMembers={familyMembers}
+                  onRate={handleRate}
+                  onUpdateRating={handleUpdateRating}
+                  onDeleteRating={handleDeleteRating}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {menuItems.length === 0 && (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No menu items found
+          </h3>
+          <p className="text-gray-600">
+            This restaurant hasn&apos;t added their menu yet.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

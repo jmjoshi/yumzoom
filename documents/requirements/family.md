@@ -1,0 +1,7 @@
+Project Requirements Document: The YumZoom Website
+The following table outlines the detailed functional requirements for the family function
+
+Requirement ID | Description | User Story | Expected Behavior/Outcome
+---|---|---|---
+FR-FAMILY CREATION-001 | Create  and Collect Family Members Information | As a new user, during family creation, I want to provide family members first name, last name, email ID, relation with the account holder and multiple phone numbers (mobile, home, and work), so that the website has family members contact information. | The family should be created within the same account for a user, The family creation form should include fields for first name, last name, email ID, relation and allow for the entry of multiple phone numbers with labels (mobile, home, work). All the fields for a family members are optional except first name
+FR-FAMILY-002 | Family Menu Item Rating | As a new user, I should be able to enter menu item rating for each family member, family members should be able to rate the menu item individually | For each menu item there should be stars and rating for each family member within the same page or screen. The rating should be optional for family members.
