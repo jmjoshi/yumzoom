@@ -18,7 +18,7 @@ const MOCK_RESTAURANTS = [
 export default function RestaurantOwnerPage() {
   const { user } = useAuth();
   const { ownerStatus, loading, refreshOwnerStatus } = useRestaurantOwner();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'verification'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'verification' | 'analytics'>('dashboard');
 
   useEffect(() => {
     if (user) {
@@ -87,6 +87,17 @@ export default function RestaurantOwnerPage() {
               Dashboard
             </button>
             <button
+              onClick={() => setActiveTab('analytics')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'analytics'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <TrendingUp className="w-5 h-5 inline mr-2" />
+              Analytics
+            </button>
+            <button
               onClick={() => setActiveTab('verification')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'verification'
@@ -94,7 +105,7 @@ export default function RestaurantOwnerPage() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <Shield className="w-5 h-5 inline mr-2" />
+              <Shield className="w-5 w-5 inline mr-2" />
               Verification
               {ownerStatus.some(s => s.verification_status === 'pending') && (
                 <span className="ml-2 bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
@@ -114,6 +125,40 @@ export default function RestaurantOwnerPage() {
           </div>
         ) : (
           <>
+            {activeTab === 'analytics' && (
+              <div>
+                {hasVerifiedRestaurants ? (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                    <TrendingUp className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Restaurant Analytics</h2>
+                    <p className="text-gray-600 mb-6">
+                      Get detailed insights about your restaurant's performance, menu items, and customer feedback.
+                    </p>
+                    <a
+                      href="/restaurant-analytics"
+                      className="bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                    >
+                      View Analytics Dashboard
+                    </a>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                    <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics Coming Soon</h2>
+                    <p className="text-gray-600 mb-6">
+                      Analytics will be available once you're verified as a restaurant owner.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('verification')}
+                      className="bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                    >
+                      Get Verified Now
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === 'dashboard' && (
               <div>
                 {hasVerifiedRestaurants ? (

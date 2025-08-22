@@ -51,6 +51,7 @@ export function Navbar() {
     { name: 'Favorites', href: '/favorites', icon: '❤️' },
     { name: 'Wishlist', href: '/wishlist', icon: '📝' },
     { name: 'Restaurant Owner', href: '/restaurant-owner', icon: Building2 },
+    { name: 'Restaurant Analytics', href: '/restaurant-analytics', icon: '📊' },
     { name: 'Privacy', href: '/privacy', icon: '🔒' },
     { name: 'Settings', href: ROUTES.SETTINGS, icon: Settings },
   ];
