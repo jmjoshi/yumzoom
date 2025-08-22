@@ -112,9 +112,9 @@ export function SocialSharing({ restaurant, rating, review, onShare }: SocialSha
     if (rating && review) {
       return `Just rated ${restaurant.name} ${rating}/10 on YumZoom! ${review.substring(0, 100)}${review.length > 100 ? '...' : ''}`;
     } else if (rating) {
-      return `Just rated ${restaurant.name} ${rating}/10 on YumZoom! Great ${restaurant.cuisine_type} food in ${restaurant.city}.`;
+      return `Just rated ${restaurant.name} ${rating}/10 on YumZoom! Great ${restaurant.cuisine_type || 'food'} experience.`;
     } else {
-      return `Check out ${restaurant.name} on YumZoom! Great ${restaurant.cuisine_type} restaurant in ${restaurant.city}.`;
+      return `Check out ${restaurant.name} on YumZoom! Great ${restaurant.cuisine_type || 'dining'} restaurant.`;
     }
   };
 
@@ -278,7 +278,7 @@ export function SocialSharing({ restaurant, rating, review, onShare }: SocialSha
           <h4 className="font-medium text-gray-900 mb-2">Preview</h4>
           <div className="text-sm text-gray-700">
             <p className="mb-2">
-              <strong>{restaurant.name}</strong> - {restaurant.cuisine_type} in {restaurant.city}
+              <strong>{restaurant.name}</strong> - {restaurant.cuisine_type || 'Restaurant'}
             </p>
             {rating && (
               <p className="mb-2">⭐ Rating: {rating}/10</p>
