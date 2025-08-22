@@ -15,6 +15,7 @@ export const ROUTES = {
   FAVORITES: '/favorites',
   WISHLIST: '/wishlist',
   PRIVACY: '/privacy',
+  INTEGRATIONS: '/integrations',
   RESTAURANT_OWNER: '/restaurant-owner',
   ADMIN_RESTAURANTS: '/admin/restaurants',
   ADMIN_SECURITY: '/admin/security',
