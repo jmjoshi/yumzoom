@@ -20,7 +20,10 @@ import {
   Settings,
   ChevronDown,
   ChevronUp,
-  Loader2
+  Loader2,
+  Mic,
+  Camera,
+  QrCode
 } from 'lucide-react';
 import {
   AdvancedSearchFilters,
@@ -32,6 +35,7 @@ import {
   RATING_FILTERS
 } from '@/types/search';
 import { DIETARY_RESTRICTIONS, CUISINE_TYPES, MENU_CATEGORIES } from '@/lib/constants';
+import { VoiceSearchButton, VisualSearchButton, QRScannerButton } from '@/components/pwa/AdvancedMobileFeatures';
 
 interface AdvancedSearchFiltersProps {
   filters: AdvancedSearchFilters;
@@ -95,6 +99,35 @@ export function AdvancedSearchFiltersComponent({
     } finally {
       setGettingLocation(false);
     }
+  };
+
+  const handleVoiceSearch = (query: string) => {
+    setLocalQuery(query);
+    onFiltersChange({ searchQuery: query });
+    onSearch();
+  };
+
+  const handleVisualSearch = (results: any[]) => {
+    if (results.length > 0) {
+      const topResult = results[0];
+      const query = topResult.data?.name || 'visual search result';
+      setLocalQuery(query);
+      onFiltersChange({ searchQuery: query });
+      onSearch();
+    }
+  };
+
+  const handleQRScan = (result: string) => {
+    // If it's a YumZoom restaurant URL, extract the query
+    if (result.includes('restaurant')) {
+      setLocalQuery('restaurant');
+      onFiltersChange({ searchQuery: 'restaurant' });
+    } else {
+      // Use the QR content as search query
+      setLocalQuery(result);
+      onFiltersChange({ searchQuery: result });
+    }
+    onSearch();
   };
 
   const getCurrentLocation = (): Promise<{ latitude: number; longitude: number }> => {
@@ -250,6 +283,33 @@ export function AdvancedSearchFiltersComponent({
             )}
             {showAdvanced ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
           </Button>
+        </div>
+
+        {/* Advanced Mobile Search Options */}
+        <div className="flex flex-wrap gap-2 md:hidden">
+          <VoiceSearchButton
+            onSearch={handleVoiceSearch}
+            className="flex-1 min-w-0 text-sm"
+          >
+            <Mic className="w-4 h-4" />
+            <span className="hidden sm:inline ml-1">Voice</span>
+          </VoiceSearchButton>
+          
+          <VisualSearchButton
+            onSearchResults={handleVisualSearch}
+            className="flex-1 min-w-0 text-sm"
+          >
+            <Camera className="w-4 h-4" />
+            <span className="hidden sm:inline ml-1">Visual</span>
+          </VisualSearchButton>
+          
+          <QRScannerButton
+            onScan={handleQRScan}
+            className="flex-1 min-w-0 text-sm"
+          >
+            <QrCode className="w-4 h-4" />
+            <span className="hidden sm:inline ml-1">QR</span>
+          </QRScannerButton>
         </div>
 
         {/* Search Type Selector */}
