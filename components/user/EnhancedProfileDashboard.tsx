@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 
 // Import sub-components
-import PreferenceTracker from './PreferenceTracker';
 import DiningInsights from './DiningInsights';
 import WishlistManager from './WishlistManager';
 import AchievementDisplay from './AchievementDisplay';
@@ -352,10 +351,12 @@ export default function EnhancedProfileDashboard() {
         </TabsContent>
 
         {/* Preferences Tab */}
+        {/* Preferences Tab */}
         <TabsContent value="preferences">
-          <PreferenceTracker />
+          <div className="p-8 text-center text-gray-500">
+            Preference Tracker component not yet implemented
+          </div>
         </TabsContent>
-
         {/* Insights Tab */}
         <TabsContent value="insights">
           <DiningInsights />
