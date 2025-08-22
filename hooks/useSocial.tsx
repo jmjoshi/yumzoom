@@ -128,13 +128,22 @@ export function useSocial(): UseSocialReturn {
           notes: data.notes,
           status: 'pending'
         })
-        .select(`
-          *,
-          following_profile:user_profiles!following_user_id(first_name, last_name, avatar_url)
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;
+
+      // Fetch the following user's profile separately
+      const { data: followingProfile } = await supabase
+        .from('user_profiles')
+        .select('first_name, last_name, avatar_url')
+        .eq('id', data.following_user_id)
+        .single();
+
+      const connectionWithProfile = {
+        ...connection,
+        following_profile: followingProfile
+      };
 
       // Log activity
       await createActivity({
@@ -144,7 +153,7 @@ export function useSocial(): UseSocialReturn {
       });
 
       await fetchConnections();
-      return connection;
+      return connectionWithProfile;
     } catch (err: any) {
       setError(err.message);
       throw err;
@@ -314,14 +323,27 @@ export function useSocial(): UseSocialReturn {
           occasion: data.occasion,
           recommended_items: data.recommended_items
         })
-        .select(`
-          *,
-          recommender_profile:user_profiles!recommender_user_id(first_name, last_name, avatar_url),
-          restaurant:restaurants(id, name, cuisine_type, image_url, address)
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;
+
+      // Manually fetch the related data
+      if (recommendation) {
+        const [recommenderProfile, restaurant] = await Promise.all([
+          supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', recommendation.recommender_user_id).single(),
+          supabase.from('restaurants').select('id, name, cuisine_type, image_url, address').eq('id', recommendation.restaurant_id).single()
+        ]);
+
+        const enrichedRecommendation = {
+          ...recommendation,
+          recommender_profile: recommenderProfile.data,
+          restaurant: restaurant.data
+        };
+
+        await fetchRecommendations();
+        return enrichedRecommendation;
+      }
 
       await fetchRecommendations();
       return recommendation;
@@ -457,39 +479,75 @@ export function useSocial(): UseSocialReturn {
       // Fetch session details
       const { data: session, error: sessionError } = await supabase
         .from('family_collaboration_sessions')
-        .select(`
-          *,
-          creator_profile:user_profiles!creator_user_id(first_name, last_name, avatar_url)
-        `)
+        .select('*')
         .eq('id', sessionId)
         .single();
 
       if (sessionError) throw sessionError;
 
-      // Fetch participants
+      // Fetch creator profile separately
+      let creatorProfile = null;
+      if (session?.creator_user_id) {
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('first_name, last_name, avatar_url')
+          .eq('id', session.creator_user_id)
+          .single();
+        
+        if (!profileError) {
+          creatorProfile = profile;
+        }
+      }
+
+      // Fetch participants with manual joins
       const { data: participants, error: participantsError } = await supabase
         .from('collaboration_participants')
-        .select(`
-          *,
-          user_profile:user_profiles!user_id(first_name, last_name, avatar_url),
-          family_member:family_members!family_member_id(name, relationship, avatar_url)
-        `)
+        .select('*')
         .eq('session_id', sessionId);
 
       if (participantsError) throw participantsError;
 
-      // Fetch options with votes
+      // Manually fetch participant profiles
+      const participantsWithProfiles = await Promise.all(
+        (participants || []).map(async (participant) => {
+          const [userProfile, familyMember] = await Promise.all([
+            participant.user_id ? supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', participant.user_id).single() : Promise.resolve({ data: null }),
+            participant.family_member_id ? supabase.from('family_members').select('name, relationship, avatar_url').eq('id', participant.family_member_id).single() : Promise.resolve({ data: null })
+          ]);
+          
+          return {
+            ...participant,
+            user_profile: userProfile.data,
+            family_member: familyMember.data
+          };
+        })
+      );
+
+      // Fetch options with manual joins
       const { data: options, error: optionsError } = await supabase
         .from('collaboration_options')
-        .select(`
-          *,
-          restaurant:restaurants(id, name, cuisine_type, image_url, address, description),
-          suggested_by_profile:user_profiles!suggested_by_user_id(first_name, last_name, avatar_url),
-          suggested_by_family_member:family_members!suggested_by_family_member_id(name, relationship)
-        `)
+        .select('*')
         .eq('session_id', sessionId);
 
       if (optionsError) throw optionsError;
+
+      // Manually fetch option details
+      const optionsWithDetails = await Promise.all(
+        (options || []).map(async (option) => {
+          const [restaurant, suggestedByProfile, suggestedByFamilyMember] = await Promise.all([
+            option.restaurant_id ? supabase.from('restaurants').select('id, name, cuisine_type, image_url, address, description').eq('id', option.restaurant_id).single() : Promise.resolve({ data: null }),
+            option.suggested_by_user_id ? supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', option.suggested_by_user_id).single() : Promise.resolve({ data: null }),
+            option.suggested_by_family_member_id ? supabase.from('family_members').select('name, relationship').eq('id', option.suggested_by_family_member_id).single() : Promise.resolve({ data: null })
+          ]);
+          
+          return {
+            ...option,
+            restaurant: restaurant.data,
+            suggested_by_profile: suggestedByProfile.data,
+            suggested_by_family_member: suggestedByFamilyMember.data
+          };
+        })
+      );
 
       // Fetch user's votes for each option
       const { data: userVotes, error: votesError } = await supabase
@@ -501,7 +559,7 @@ export function useSocial(): UseSocialReturn {
       if (votesError) throw votesError;
 
       // Enhance options with user votes
-      const enhancedOptions = options.map(option => ({
+      const enhancedOptions = optionsWithDetails.map(option => ({
         ...option,
         user_vote: userVotes.find(vote => vote.option_id === option.id)
       }));
@@ -513,10 +571,11 @@ export function useSocial(): UseSocialReturn {
 
       const details: CollaborationSessionDetails = {
         ...session,
-        participants: participants || [],
+        creator_profile: creatorProfile,
+        participants: participantsWithProfiles || [],
         options: enhancedOptions,
         winning_option: winningOption,
-        is_participant: participants?.some(p => p.user_id === user.id) || session.creator_user_id === user.id,
+        is_participant: participantsWithProfiles?.some(p => p.user_id === user.id) || session.creator_user_id === user.id,
         can_vote: session.status === 'active',
         user_has_voted: userVotes.length > 0
       };
@@ -612,48 +671,84 @@ export function useSocial(): UseSocialReturn {
       setLoading(true);
       setError(null);
 
-      // Fetch accepted connections
+      // Fetch accepted connections with manual joins
       const { data: acceptedConnections, error: acceptedError } = await supabase
         .from('family_connections')
-        .select(`
-          *,
-          follower_profile:user_profiles!follower_user_id(first_name, last_name, avatar_url),
-          following_profile:user_profiles!following_user_id(first_name, last_name, avatar_url)
-        `)
+        .select('*')
         .or(`follower_user_id.eq.${user.id},following_user_id.eq.${user.id}`)
         .eq('status', 'accepted');
 
       if (acceptedError) throw acceptedError;
 
-      // Fetch pending requests received
+      // Manually fetch profiles for accepted connections
+      const connectionsWithProfiles = await Promise.all(
+        (acceptedConnections || []).map(async (connection) => {
+          const [followerProfile, followingProfile] = await Promise.all([
+            supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.follower_user_id).single(),
+            supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.following_user_id).single()
+          ]);
+          
+          return {
+            ...connection,
+            follower_profile: followerProfile.data,
+            following_profile: followingProfile.data
+          };
+        })
+      );
+
+      // Fetch pending requests received with manual joins
       const { data: pendingReceived, error: pendingError } = await supabase
         .from('family_connections')
-        .select(`
-          *,
-          follower_profile:user_profiles!follower_user_id(first_name, last_name, avatar_url),
-          following_profile:user_profiles!following_user_id(first_name, last_name, avatar_url)
-        `)
+        .select('*')
         .eq('following_user_id', user.id)
         .eq('status', 'pending');
 
       if (pendingError) throw pendingError;
 
-      // Fetch pending requests sent
+      // Manually fetch profiles for pending received
+      const pendingReceivedWithProfiles = await Promise.all(
+        (pendingReceived || []).map(async (connection) => {
+          const [followerProfile, followingProfile] = await Promise.all([
+            supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.follower_user_id).single(),
+            supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.following_user_id).single()
+          ]);
+          
+          return {
+            ...connection,
+            follower_profile: followerProfile.data,
+            following_profile: followingProfile.data
+          };
+        })
+      );
+
+      // Fetch pending requests sent with manual joins
       const { data: pendingSent, error: sentError } = await supabase
         .from('family_connections')
-        .select(`
-          *,
-          follower_profile:user_profiles!follower_user_id(first_name, last_name, avatar_url),
-          following_profile:user_profiles!following_user_id(first_name, last_name, avatar_url)
-        `)
+        .select('*')
         .eq('follower_user_id', user.id)
         .eq('status', 'pending');
 
       if (sentError) throw sentError;
 
-      setConnections(acceptedConnections || []);
-      setPendingRequests(pendingReceived || []);
-      setSentRequests(pendingSent || []);
+      // Manually fetch profiles for pending sent
+      const pendingSentWithProfiles = await Promise.all(
+        (pendingSent || []).map(async (connection) => {
+          const [followerProfile, followingProfile] = await Promise.all([
+            supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.follower_user_id).single(),
+            supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.following_user_id).single()
+          ]);
+          
+          return {
+            ...connection,
+            follower_profile: followerProfile.data,
+            following_profile: followingProfile.data
+          };
+        })
+      );
+
+      setConnections(connectionsWithProfiles || []);
+      setPendingRequests(pendingReceivedWithProfiles || []);
+      setSentRequests(pendingSentWithProfiles || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -685,33 +780,54 @@ export function useSocial(): UseSocialReturn {
       setLoading(true);
       setError(null);
 
-      // Fetch received recommendations
+      // Fetch received recommendations with manual joins
       const { data: received, error: receivedError } = await supabase
         .from('friend_recommendations')
-        .select(`
-          *,
-          recommender_profile:user_profiles!recommender_user_id(first_name, last_name, avatar_url),
-          restaurant:restaurants(id, name, cuisine_type, image_url, address)
-        `)
+        .select('*')
         .eq('recipient_user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (receivedError) throw receivedError;
 
-      // Fetch sent recommendations
+      // Manually fetch profiles and restaurant data for received recommendations
+      const receivedWithProfiles = await Promise.all(
+        (received || []).map(async (rec) => {
+          const [recommenderProfile, restaurant] = await Promise.all([
+            supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', rec.recommender_user_id).single(),
+            supabase.from('restaurants').select('id, name, cuisine_type, image_url, address').eq('id', rec.restaurant_id).single()
+          ]);
+          
+          return {
+            ...rec,
+            recommender_profile: recommenderProfile.data,
+            restaurant: restaurant.data
+          };
+        })
+      );
+
+      // Fetch sent recommendations with manual joins
       const { data: sent, error: sentError } = await supabase
         .from('friend_recommendations')
-        .select(`
-          *,
-          restaurant:restaurants(id, name, cuisine_type, image_url, address)
-        `)
+        .select('*')
         .eq('recommender_user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (sentError) throw sentError;
 
-      setReceivedRecommendations(received || []);
-      setSentRecommendations(sent || []);
+      // Manually fetch restaurant data for sent recommendations
+      const sentWithProfiles = await Promise.all(
+        (sent || []).map(async (rec) => {
+          const restaurant = await supabase.from('restaurants').select('id, name, cuisine_type, image_url, address').eq('id', rec.restaurant_id).single();
+          
+          return {
+            ...rec,
+            restaurant: restaurant.data
+          };
+        })
+      );
+
+      setReceivedRecommendations(receivedWithProfiles || []);
+      setSentRecommendations(sentWithProfiles || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -726,19 +842,9 @@ export function useSocial(): UseSocialReturn {
       setLoading(true);
       setError(null);
 
-      const { data: collaborations, error } = await supabase
-        .from('family_collaboration_sessions')
-        .select(`
-          *,
-          creator_profile:user_profiles!creator_user_id(first_name, last_name, avatar_url)
-        `)
-        .or(`creator_user_id.eq.${user.id},id.in.(${`SELECT session_id FROM collaboration_participants WHERE user_id = '${user.id}'`})`)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setActiveCollaborations(collaborations || []);
+      // Temporarily disable collaboration queries to avoid recursion
+      console.log('Skipping collaboration fetch to avoid recursion');
+      setActiveCollaborations([]);
     } catch (err: any) {
       setError(err.message);
     } finally {

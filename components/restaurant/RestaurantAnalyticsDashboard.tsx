@@ -166,10 +166,7 @@ export default function RestaurantAnalyticsDashboard({
                   )}
                 </div>
                 <div className="p-3 bg-orange-100 rounded-full">
-                  {metric.icon && (() => {
-                    const IconComponent = metric.icon;
-                    return <IconComponent className="h-6 w-6 text-orange-600" />;
-                  })()}
+                  {metric.icon && React.createElement(metric.icon as React.ComponentType<{ className?: string }>, { className: "h-6 w-6 text-orange-600" })}
                 </div>
               </div>
             </CardContent>

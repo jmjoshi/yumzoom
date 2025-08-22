@@ -1,8 +1,22 @@
--- Social Features - Phase 1 Schema
--- This file implements the database schema for social networking features
+-- Fix Social Features Foreign Key References
+-- This migration updates existing social tables to reference user_profiles instead of auth.users
+
+-- First, drop all the existing tables to recreate them with correct foreign keys
+-- We need to drop in reverse dependency order
+
+DROP TABLE IF EXISTS collaboration_votes CASCADE;
+DROP TABLE IF EXISTS collaboration_options CASCADE;
+DROP TABLE IF EXISTS collaboration_participants CASCADE;
+DROP TABLE IF EXISTS family_collaboration_sessions CASCADE;
+DROP TABLE IF EXISTS friend_recommendations CASCADE;
+DROP TABLE IF EXISTS user_activities CASCADE;
+DROP TABLE IF EXISTS family_connections CASCADE;
+DROP TABLE IF EXISTS social_discovery_settings CASCADE;
+
+-- Now recreate them with the correct foreign key references to user_profiles
 
 -- Family connections table (following/follower relationships)
-CREATE TABLE IF NOT EXISTS family_connections (
+CREATE TABLE family_connections (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     follower_user_id uuid REFERENCES user_profiles(id) ON DELETE CASCADE NOT NULL,
     following_user_id uuid REFERENCES user_profiles(id) ON DELETE CASCADE NOT NULL,
@@ -16,7 +30,7 @@ CREATE TABLE IF NOT EXISTS family_connections (
 );
 
 -- Activity feed table to track user activities
-CREATE TABLE IF NOT EXISTS user_activities (
+CREATE TABLE user_activities (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id uuid REFERENCES user_profiles(id) ON DELETE CASCADE NOT NULL,
     activity_type text NOT NULL CHECK (activity_type IN (
@@ -33,7 +47,7 @@ CREATE TABLE IF NOT EXISTS user_activities (
 );
 
 -- Friend recommendations table for sharing restaurant recommendations
-CREATE TABLE IF NOT EXISTS friend_recommendations (
+CREATE TABLE friend_recommendations (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     recommender_user_id uuid REFERENCES user_profiles(id) ON DELETE CASCADE NOT NULL,
     recipient_user_id uuid REFERENCES user_profiles(id) ON DELETE CASCADE NOT NULL,
@@ -51,7 +65,7 @@ CREATE TABLE IF NOT EXISTS friend_recommendations (
 );
 
 -- Family group voting/collaboration table
-CREATE TABLE IF NOT EXISTS family_collaboration_sessions (
+CREATE TABLE family_collaboration_sessions (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     creator_user_id uuid REFERENCES user_profiles(id) ON DELETE CASCADE NOT NULL,
     title text NOT NULL,
@@ -67,7 +81,7 @@ CREATE TABLE IF NOT EXISTS family_collaboration_sessions (
 );
 
 -- Collaboration session participants
-CREATE TABLE IF NOT EXISTS collaboration_participants (
+CREATE TABLE collaboration_participants (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     session_id uuid REFERENCES family_collaboration_sessions(id) ON DELETE CASCADE NOT NULL,
     user_id uuid REFERENCES user_profiles(id) ON DELETE CASCADE,
@@ -80,7 +94,7 @@ CREATE TABLE IF NOT EXISTS collaboration_participants (
 );
 
 -- Collaboration voting options (restaurants being voted on)
-CREATE TABLE IF NOT EXISTS collaboration_options (
+CREATE TABLE collaboration_options (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     session_id uuid REFERENCES family_collaboration_sessions(id) ON DELETE CASCADE NOT NULL,
     restaurant_id uuid REFERENCES restaurants(id) ON DELETE CASCADE NOT NULL,
@@ -92,7 +106,7 @@ CREATE TABLE IF NOT EXISTS collaboration_options (
 );
 
 -- Individual votes in collaboration sessions
-CREATE TABLE IF NOT EXISTS collaboration_votes (
+CREATE TABLE collaboration_votes (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     session_id uuid REFERENCES family_collaboration_sessions(id) ON DELETE CASCADE NOT NULL,
     option_id uuid REFERENCES collaboration_options(id) ON DELETE CASCADE NOT NULL,
@@ -106,7 +120,7 @@ CREATE TABLE IF NOT EXISTS collaboration_votes (
 );
 
 -- User social discovery preferences
-CREATE TABLE IF NOT EXISTS social_discovery_settings (
+CREATE TABLE social_discovery_settings (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id uuid REFERENCES user_profiles(id) ON DELETE CASCADE NOT NULL UNIQUE,
     discoverable_by_email boolean DEFAULT true,
@@ -121,36 +135,30 @@ CREATE TABLE IF NOT EXISTS social_discovery_settings (
 );
 
 -- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_family_connections_follower_user_id ON family_connections(follower_user_id);
-CREATE INDEX IF NOT EXISTS idx_family_connections_following_user_id ON family_connections(following_user_id);
-CREATE INDEX IF NOT EXISTS idx_family_connections_status ON family_connections(status);
+CREATE INDEX idx_family_connections_follower_user_id ON family_connections(follower_user_id);
+CREATE INDEX idx_family_connections_following_user_id ON family_connections(following_user_id);
+CREATE INDEX idx_family_connections_status ON family_connections(status);
 
-CREATE INDEX IF NOT EXISTS idx_user_activities_user_id ON user_activities(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_activities_created_at ON user_activities(created_at);
-CREATE INDEX IF NOT EXISTS idx_user_activities_type ON user_activities(activity_type);
-CREATE INDEX IF NOT EXISTS idx_user_activities_restaurant_id ON user_activities(restaurant_id);
-CREATE INDEX IF NOT EXISTS idx_user_activities_public ON user_activities(is_public);
+CREATE INDEX idx_user_activities_user_id ON user_activities(user_id);
+CREATE INDEX idx_user_activities_created_at ON user_activities(created_at);
+CREATE INDEX idx_user_activities_type ON user_activities(activity_type);
+CREATE INDEX idx_user_activities_restaurant_id ON user_activities(restaurant_id);
+CREATE INDEX idx_user_activities_public ON user_activities(is_public);
 
-CREATE INDEX IF NOT EXISTS idx_friend_recommendations_recipient ON friend_recommendations(recipient_user_id);
-CREATE INDEX IF NOT EXISTS idx_friend_recommendations_recommender ON friend_recommendations(recommender_user_id);
-CREATE INDEX IF NOT EXISTS idx_friend_recommendations_restaurant ON friend_recommendations(restaurant_id);
-CREATE INDEX IF NOT EXISTS idx_friend_recommendations_read ON friend_recommendations(is_read);
+CREATE INDEX idx_friend_recommendations_recipient ON friend_recommendations(recipient_user_id);
+CREATE INDEX idx_friend_recommendations_recommender ON friend_recommendations(recommender_user_id);
+CREATE INDEX idx_friend_recommendations_restaurant ON friend_recommendations(restaurant_id);
+CREATE INDEX idx_friend_recommendations_read ON friend_recommendations(is_read);
 
-CREATE INDEX IF NOT EXISTS idx_collaboration_sessions_creator ON family_collaboration_sessions(creator_user_id);
-CREATE INDEX IF NOT EXISTS idx_collaboration_sessions_status ON family_collaboration_sessions(status);
-CREATE INDEX IF NOT EXISTS idx_collaboration_participants_session ON collaboration_participants(session_id);
-CREATE INDEX IF NOT EXISTS idx_collaboration_participants_user ON collaboration_participants(user_id);
-CREATE INDEX IF NOT EXISTS idx_collaboration_options_session ON collaboration_options(session_id);
-CREATE INDEX IF NOT EXISTS idx_collaboration_votes_session ON collaboration_votes(session_id);
-CREATE INDEX IF NOT EXISTS idx_collaboration_votes_option ON collaboration_votes(option_id);
+CREATE INDEX idx_collaboration_sessions_creator ON family_collaboration_sessions(creator_user_id);
+CREATE INDEX idx_collaboration_sessions_status ON family_collaboration_sessions(status);
+CREATE INDEX idx_collaboration_participants_session ON collaboration_participants(session_id);
+CREATE INDEX idx_collaboration_participants_user ON collaboration_participants(user_id);
+CREATE INDEX idx_collaboration_options_session ON collaboration_options(session_id);
+CREATE INDEX idx_collaboration_votes_session ON collaboration_votes(session_id);
+CREATE INDEX idx_collaboration_votes_option ON collaboration_votes(option_id);
 
--- Add triggers for updated_at columns (drop existing ones first to avoid conflicts)
-DROP TRIGGER IF EXISTS update_family_connections_updated_at ON family_connections;
-DROP TRIGGER IF EXISTS update_friend_recommendations_updated_at ON friend_recommendations;
-DROP TRIGGER IF EXISTS update_family_collaboration_sessions_updated_at ON family_collaboration_sessions;
-DROP TRIGGER IF EXISTS update_collaboration_votes_updated_at ON collaboration_votes;
-DROP TRIGGER IF EXISTS update_social_discovery_settings_updated_at ON social_discovery_settings;
-
+-- Add triggers for updated_at columns
 CREATE TRIGGER update_family_connections_updated_at
     BEFORE UPDATE ON family_connections
     FOR EACH ROW
@@ -176,7 +184,7 @@ CREATE TRIGGER update_social_discovery_settings_updated_at
     FOR EACH ROW
     EXECUTE PROCEDURE update_updated_at_column();
 
--- Enable RLS for all new tables
+-- Enable RLS for all tables
 ALTER TABLE family_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE friend_recommendations ENABLE ROW LEVEL SECURITY;
@@ -186,12 +194,7 @@ ALTER TABLE collaboration_options ENABLE ROW LEVEL SECURITY;
 ALTER TABLE collaboration_votes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE social_discovery_settings ENABLE ROW LEVEL SECURITY;
 
--- RLS policies for family_connections (drop existing ones first to avoid conflicts)
-DROP POLICY IF EXISTS "Users can view their own connections" ON family_connections;
-DROP POLICY IF EXISTS "Users can create their own connections" ON family_connections;
-DROP POLICY IF EXISTS "Users can update their own connections" ON family_connections;
-DROP POLICY IF EXISTS "Users can delete their own connections" ON family_connections;
-
+-- RLS policies for family_connections
 CREATE POLICY "Users can view their own connections" ON family_connections
     FOR SELECT USING (auth.uid() = follower_user_id OR auth.uid() = following_user_id);
 
@@ -204,13 +207,7 @@ CREATE POLICY "Users can update their own connections" ON family_connections
 CREATE POLICY "Users can delete their own connections" ON family_connections
     FOR DELETE USING (auth.uid() = follower_user_id OR auth.uid() = following_user_id);
 
--- RLS policies for user_activities (drop existing ones first to avoid conflicts)
-DROP POLICY IF EXISTS "Users can view their own activities" ON user_activities;
-DROP POLICY IF EXISTS "Users can view public activities from connections" ON user_activities;
-DROP POLICY IF EXISTS "Users can create their own activities" ON user_activities;
-DROP POLICY IF EXISTS "Users can update their own activities" ON user_activities;
-DROP POLICY IF EXISTS "Users can delete their own activities" ON user_activities;
-
+-- RLS policies for user_activities
 CREATE POLICY "Users can view their own activities" ON user_activities
     FOR SELECT USING (auth.uid() = user_id);
 
@@ -232,12 +229,7 @@ CREATE POLICY "Users can update their own activities" ON user_activities
 CREATE POLICY "Users can delete their own activities" ON user_activities
     FOR DELETE USING (auth.uid() = user_id);
 
--- RLS policies for friend_recommendations (drop existing ones first to avoid conflicts)
-DROP POLICY IF EXISTS "Users can view recommendations sent to them or by them" ON friend_recommendations;
-DROP POLICY IF EXISTS "Users can create recommendations" ON friend_recommendations;
-DROP POLICY IF EXISTS "Users can update recommendations they received" ON friend_recommendations;
-DROP POLICY IF EXISTS "Users can delete recommendations they sent" ON friend_recommendations;
-
+-- RLS policies for friend_recommendations
 CREATE POLICY "Users can view recommendations sent to them or by them" ON friend_recommendations
     FOR SELECT USING (auth.uid() = recipient_user_id OR auth.uid() = recommender_user_id);
 
@@ -250,15 +242,14 @@ CREATE POLICY "Users can update recommendations they received" ON friend_recomme
 CREATE POLICY "Users can delete recommendations they sent" ON friend_recommendations
     FOR DELETE USING (auth.uid() = recommender_user_id);
 
--- RLS policies for family_collaboration_sessions (drop existing ones first to avoid conflicts)
-DROP POLICY IF EXISTS "Users can view collaboration sessions they created or participate in" ON family_collaboration_sessions;
-DROP POLICY IF EXISTS "Users can create collaboration sessions" ON family_collaboration_sessions;
-DROP POLICY IF EXISTS "Users can update collaboration sessions they created" ON family_collaboration_sessions;
-DROP POLICY IF EXISTS "Users can delete collaboration sessions they created" ON family_collaboration_sessions;
-
+-- RLS policies for family_collaboration_sessions
 CREATE POLICY "Users can view collaboration sessions they created or participate in" ON family_collaboration_sessions
     FOR SELECT USING (
-        auth.uid() = creator_user_id
+        auth.uid() = creator_user_id OR 
+        id IN (
+            SELECT session_id FROM collaboration_participants 
+            WHERE user_id = auth.uid()
+        )
     );
 
 CREATE POLICY "Users can create collaboration sessions" ON family_collaboration_sessions
@@ -270,47 +261,66 @@ CREATE POLICY "Users can update collaboration sessions they created" ON family_c
 CREATE POLICY "Users can delete collaboration sessions they created" ON family_collaboration_sessions
     FOR DELETE USING (auth.uid() = creator_user_id);
 
--- RLS policies for collaboration_participants (drop existing ones first to avoid conflicts)
-DROP POLICY IF EXISTS "Users can view participants in sessions they're part of" ON collaboration_participants;
-DROP POLICY IF EXISTS "Session creators can manage participants" ON collaboration_participants;
-DROP POLICY IF EXISTS "Users can update their own participation" ON collaboration_participants;
-
+-- RLS policies for collaboration_participants
 CREATE POLICY "Users can view participants in sessions they're part of" ON collaboration_participants
     FOR SELECT USING (
-        user_id = auth.uid()
+        session_id IN (
+            SELECT id FROM family_collaboration_sessions 
+            WHERE creator_user_id = auth.uid()
+        ) OR
+        session_id IN (
+            SELECT session_id FROM collaboration_participants 
+            WHERE user_id = auth.uid()
+        )
     );
 
 CREATE POLICY "Session creators can manage participants" ON collaboration_participants
     FOR ALL USING (
-        user_id = auth.uid()
+        session_id IN (
+            SELECT id FROM family_collaboration_sessions 
+            WHERE creator_user_id = auth.uid()
+        )
     );
 
 CREATE POLICY "Users can update their own participation" ON collaboration_participants
     FOR UPDATE USING (auth.uid() = user_id);
 
--- RLS policies for collaboration_options (drop existing ones first to avoid conflicts)
-DROP POLICY IF EXISTS "Users can view options in sessions they're part of" ON collaboration_options;
-DROP POLICY IF EXISTS "Participants can create options" ON collaboration_options;
-
+-- RLS policies for collaboration_options
 CREATE POLICY "Users can view options in sessions they're part of" ON collaboration_options
     FOR SELECT USING (
-        suggested_by_user_id = auth.uid()
+        session_id IN (
+            SELECT id FROM family_collaboration_sessions 
+            WHERE creator_user_id = auth.uid()
+        ) OR
+        session_id IN (
+            SELECT session_id FROM collaboration_participants 
+            WHERE user_id = auth.uid()
+        )
     );
 
 CREATE POLICY "Participants can create options" ON collaboration_options
     FOR INSERT WITH CHECK (
-        suggested_by_user_id = auth.uid()
+        session_id IN (
+            SELECT id FROM family_collaboration_sessions 
+            WHERE creator_user_id = auth.uid()
+        ) OR
+        session_id IN (
+            SELECT session_id FROM collaboration_participants 
+            WHERE user_id = auth.uid()
+        )
     );
 
--- RLS policies for collaboration_votes (drop existing ones first to avoid conflicts)
-DROP POLICY IF EXISTS "Users can view votes in sessions they're part of" ON collaboration_votes;
-DROP POLICY IF EXISTS "Users can create their own votes" ON collaboration_votes;
-DROP POLICY IF EXISTS "Users can update their own votes" ON collaboration_votes;
-DROP POLICY IF EXISTS "Users can delete their own votes" ON collaboration_votes;
-
+-- RLS policies for collaboration_votes
 CREATE POLICY "Users can view votes in sessions they're part of" ON collaboration_votes
     FOR SELECT USING (
-        voter_user_id = auth.uid()
+        session_id IN (
+            SELECT id FROM family_collaboration_sessions 
+            WHERE creator_user_id = auth.uid()
+        ) OR
+        session_id IN (
+            SELECT session_id FROM collaboration_participants 
+            WHERE user_id = auth.uid()
+        )
     );
 
 CREATE POLICY "Users can create their own votes" ON collaboration_votes
@@ -322,11 +332,7 @@ CREATE POLICY "Users can update their own votes" ON collaboration_votes
 CREATE POLICY "Users can delete their own votes" ON collaboration_votes
     FOR DELETE USING (auth.uid() = voter_user_id);
 
--- RLS policies for social_discovery_settings (drop existing ones first to avoid conflicts)
-DROP POLICY IF EXISTS "Users can view their own social discovery settings" ON social_discovery_settings;
-DROP POLICY IF EXISTS "Users can create their own social discovery settings" ON social_discovery_settings;
-DROP POLICY IF EXISTS "Users can update their own social discovery settings" ON social_discovery_settings;
-
+-- RLS policies for social_discovery_settings
 CREATE POLICY "Users can view their own social discovery settings" ON social_discovery_settings
     FOR SELECT USING (auth.uid() = user_id);
 
@@ -516,7 +522,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to automatically update vote counts
-DROP TRIGGER IF EXISTS update_vote_count_trigger ON collaboration_votes;
 CREATE TRIGGER update_vote_count_trigger
     AFTER INSERT OR UPDATE OR DELETE ON collaboration_votes
     FOR EACH ROW EXECUTE PROCEDURE update_collaboration_vote_count();

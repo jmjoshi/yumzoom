@@ -241,3 +241,70 @@ This document organizes all recommended YumZoom features by implementation prior
 - **Wishlist engagement**: 50% of users maintain active wishlists
 
 This roadmap provides a clear path for implementing all recommended features based on their impact, complexity, and strategic value to YumZoom's growth and user satisfaction.
+
+---
+
+## 📋 **BACKLOG - TEMPORARILY DISABLED FEATURES**
+
+### Social Features - Collaboration Sessions (TEMPORARILY DISABLED)
+**Status:** Disabled due to infinite recursion in RLS policies  
+**Original Implementation:** Completed but experiencing database policy conflicts  
+**Issue:** Circular Row Level Security (RLS) policy dependencies causing infinite recursion  
+**Timeline for Re-enablement:** 1-2 days
+
+#### Affected Features:
+- **Family Collaboration Sessions** - Group decision making for restaurant selection
+  - Create dining decision sessions with multiple participants
+  - Real-time voting on restaurant options
+  - Session management and status tracking
+  - Winner determination based on voting results
+
+- **Collaboration Participants Management** - User and family member participation
+  - Add family members and connected users to sessions
+  - Track participation status and engagement
+  - Manage participant permissions and roles
+
+- **Collaboration Options & Voting** - Restaurant option management and voting system
+  - Add restaurant suggestions to collaboration sessions
+  - Vote on preferred dining options
+  - Real-time vote counting and result calculation
+  - Vote history and user voting patterns
+
+#### Technical Details:
+- **Root Cause:** Complex RLS policies with circular table references between `family_collaboration_sessions`, `collaboration_participants`, `collaboration_options`, and `collaboration_votes`
+- **Current Workaround:** Collaboration queries disabled in `useSocial.tsx` hook
+- **Required Fix:** Simplify RLS policies to eliminate circular dependencies
+- **Database Tables Affected:**
+  - `family_collaboration_sessions`
+  - `collaboration_participants`
+  - `collaboration_options`
+  - `collaboration_votes`
+
+#### Recovery Plan:
+1. **Phase 1 (Immediate - 30 minutes):** Implement simple RLS policies without circular references
+2. **Phase 2 (1-2 hours):** Test collaboration features with simplified security model
+3. **Phase 3 (Optional - 2-4 hours):** Redesign RLS policies for production-grade security while maintaining functionality
+
+#### Impact on User Experience:
+- ✅ **Working:** All other social features (connections, recommendations, activity feed)
+- ❌ **Disabled:** Group decision-making tools and collaboration workflows
+- 🔄 **Workaround:** Users can still share recommendations individually through the friend recommendation system
+
+#### Priority for Re-enablement:
+**High Priority** - These features are core to YumZoom's family collaboration value proposition and should be restored as soon as the RLS policy issues are resolved.
+
+---
+
+## 🔧 **TECHNICAL DEBT & MAINTENANCE BACKLOG**
+
+### Database & Security
+- **RLS Policy Optimization** - Simplify policies to prevent infinite recursion
+- **Schema Cache Issues** - Resolve Supabase schema cache problems affecting SQL queries
+- **Manual Join Implementation** - Optimize manual joins used to bypass relationship errors
+
+### Code Quality
+- **Error Handling Improvements** - Better error states for social features
+- **Loading State Management** - Consistent loading indicators across social components
+- **Type Safety** - Complete TypeScript type definitions for social features
+
+---

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSocial } from '@/hooks/useSocial';
+// import { useSimpleSocial } from '@/hooks/useSocial-simple';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   Users, 
@@ -39,6 +40,8 @@ export default function SocialPage() {
     socialStats,
     refreshAll
   } = useSocial();
+  
+  // Remove temporary placeholders since we're back to full useSocial
   
   const [activeTab, setActiveTab] = useState<'feed' | 'connections' | 'recommendations' | 'collaborations'>('feed');
   const [showAddConnectionModal, setShowAddConnectionModal] = useState(false);
