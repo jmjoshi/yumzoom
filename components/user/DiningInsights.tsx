@@ -137,14 +137,14 @@ export default function DiningInsights() {
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2">
         <Button
-          variant={filter === 'all' ? 'default' : 'outline'}
+          variant={filter === 'all' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setFilter('all')}
         >
           All Insights ({insights.length})
         </Button>
         <Button
-          variant={filter === 'unread' ? 'default' : 'outline'}
+          variant={filter === 'unread' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setFilter('unread')}
         >
@@ -157,7 +157,7 @@ export default function DiningInsights() {
           return (
             <Button
               key={type}
-              variant={filter === type ? 'default' : 'outline'}
+              variant={filter === type ? 'primary' : 'outline'}
               size="sm"
               onClick={() => setFilter(type)}
             >
@@ -216,7 +216,7 @@ export default function DiningInsights() {
                             {insight.title}
                           </h3>
                           {!insight.is_read && (
-                            <Badge variant="default" className="bg-blue-100 text-blue-800">
+                            <Badge variant="primary" className="bg-blue-100 text-blue-800">
                               New
                             </Badge>
                           )}

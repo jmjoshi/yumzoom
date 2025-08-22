@@ -281,7 +281,7 @@ export default function AchievementDisplay() {
         <span className="text-sm font-medium text-gray-700">Filter:</span>
         
         <Button
-          variant={filter === 'all' ? 'default' : 'outline'}
+          variant={filter === 'all' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setFilter('all')}
         >
@@ -289,7 +289,7 @@ export default function AchievementDisplay() {
         </Button>
         
         <Button
-          variant={filter === 'unlocked' ? 'default' : 'outline'}
+          variant={filter === 'unlocked' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setFilter('unlocked')}
         >
@@ -297,7 +297,7 @@ export default function AchievementDisplay() {
         </Button>
         
         <Button
-          variant={filter === 'locked' ? 'default' : 'outline'}
+          variant={filter === 'locked' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setFilter('locked')}
         >
@@ -312,7 +312,7 @@ export default function AchievementDisplay() {
           return (
             <Button
               key={category}
-              variant={filter === category ? 'default' : 'outline'}
+              variant={filter === category ? 'primary' : 'outline'}
               size="sm"
               onClick={() => setFilter(category)}
             >

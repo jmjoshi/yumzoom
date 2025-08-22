@@ -184,7 +184,7 @@ export default function DiningPatternAnalysis() {
         ].map(({ key, label, icon: Icon }) => (
           <Button
             key={key}
-            variant={activeView === key ? 'default' : 'outline'}
+            variant={activeView === key ? 'primary' : 'outline'}
             size="sm"
             onClick={() => setActiveView(key as any)}
           >
@@ -204,7 +204,8 @@ export default function DiningPatternAnalysis() {
               familyStats?.dining_frequency.weekly_average || 0,
               'Average restaurant visits per week',
               Utensils,
-              familyStats?.dining_frequency.monthly_trend
+              familyStats?.dining_frequency.monthly_trend === 'increasing' ? 'up' : 
+              familyStats?.dining_frequency.monthly_trend === 'decreasing' ? 'down' : 'stable'
             )}
             
             {renderInsightCard(
