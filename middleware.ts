@@ -79,6 +79,8 @@ function getRateLimit(req: NextRequest): boolean {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   
+  // Temporarily disable internationalization
+  /*
   // Skip internationalization for API routes, static files, and internal Next.js routes
   const shouldSkipIntl = 
     pathname.startsWith('/api') ||
@@ -86,7 +88,8 @@ export async function middleware(req: NextRequest) {
     pathname.includes('.') ||
     pathname.startsWith('/manifest') ||
     pathname.startsWith('/sw') ||
-    pathname.startsWith('/favicon');
+    pathname.startsWith('/favicon') ||
+    pathname === '/'; // Temporarily skip home page
 
   if (!shouldSkipIntl) {
     // Apply internationalization middleware first
@@ -95,6 +98,7 @@ export async function middleware(req: NextRequest) {
       return intlResponse;
     }
   }
+  */
 
   const ip = req.ip || 'unknown';
   
