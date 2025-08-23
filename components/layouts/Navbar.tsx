@@ -48,6 +48,7 @@ export function Navbar() {
 
   const userMenuItems = [
     { name: 'Profile', href: ROUTES.PROFILE, icon: User },
+    { name: 'Gamification', href: '/gamification', icon: '🎮' },
     { name: 'Favorites', href: '/favorites', icon: '❤️' },
     { name: 'Wishlist', href: '/wishlist', icon: '📝' },
     { name: 'Restaurant Owner', href: '/restaurant-owner', icon: Building2 },

@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdvancedGamification } from '@/hooks/useAdvancedGamification';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { StarRating } from '@/components/ui/Rating';
 import { Button } from '@/components/ui/Button';
 import { formatDate } from '@/lib/utils';
-import { Star, TrendingUp, Users, Calendar, BarChart3 } from 'lucide-react';
+import { Star, TrendingUp, Users, Calendar, BarChart3, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/constants';
 
@@ -52,6 +53,7 @@ interface RestaurantRatingGroup {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { summary: gamificationSummary } = useAdvancedGamification();
   const [stats, setStats] = useState<DashboardStats>({
     totalRatings: 0,
     averageRating: 0,
@@ -224,6 +226,15 @@ export default function DashboardPage() {
       action: stats.familyMembers === 0 ? 'Add family members' : 'Manage family',
       href: ROUTES.FAMILY,
     },
+    {
+      title: 'Gamification Level',
+      value: gamificationSummary?.level || 1,
+      description: `${gamificationSummary?.total_points || 0} total points`,
+      icon: Trophy,
+      color: 'text-orange-600',
+      action: 'View Progress',
+      href: '/gamification',
+    },
   ];
 
   return (
@@ -250,7 +261,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
         {statCards.map((stat, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
