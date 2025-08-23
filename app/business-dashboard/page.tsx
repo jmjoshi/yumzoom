@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { 
   CreditCard, 
   TrendingUp, 
@@ -298,8 +298,8 @@ export default function BusinessDashboard({ restaurantId }: BusinessDashboardPro
                           ) : (
                             <Clock className="h-4 w-4 text-gray-400" />
                           )}
-                          {feature.usage_limit > 0 && (
-                            <span className={getFeatureUsageColor(feature.current_usage || 0, feature.usage_limit)}>
+                          {(feature.usage_limit ?? 0) > 0 && (
+                            <span className={getFeatureUsageColor(feature.current_usage || 0, feature.usage_limit ?? 0)}>
                               {feature.usage_remaining} remaining
                             </span>
                           )}
@@ -374,7 +374,7 @@ export default function BusinessDashboard({ restaurantId }: BusinessDashboardPro
                     </ul>
                     <Button 
                       className="w-full mt-4" 
-                      variant={currentSubscription?.subscription_plan_id === plan.id ? 'outline' : 'default'}
+                      variant={currentSubscription?.subscription_plan_id === plan.id ? 'outline' : 'primary'}
                       disabled={currentSubscription?.subscription_plan_id === plan.id}
                     >
                       {currentSubscription?.subscription_plan_id === plan.id ? 'Current Plan' : 'Upgrade'}
