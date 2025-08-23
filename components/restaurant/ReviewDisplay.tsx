@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { StarRating } from '@/components/ui/Rating';
 import { UserRating, ReviewVote } from '@/types/restaurant';
 import { formatRating, cn, formatDate } from '@/lib/utils';
+import { ContentReport, QualityScore, TrustScore } from '@/components/moderation/ContentReport';
 import { 
   ThumbsUp, 
   ThumbsDown, 
@@ -14,7 +15,9 @@ import {
   Trash2,
   Flag,
   Calendar,
-  User
+  User,
+  Shield,
+  Award
 } from 'lucide-react';
 
 interface ReviewDisplayProps {
@@ -26,6 +29,9 @@ interface ReviewDisplayProps {
   onReport?: (reviewId: string) => void;
   className?: string;
   showActions?: boolean;
+  showModerationInfo?: boolean;
+  qualityScore?: number;
+  userTrustScore?: number;
 }
 
 export function ReviewDisplay({
@@ -36,7 +42,10 @@ export function ReviewDisplay({
   onDelete,
   onReport,
   className = '',
-  showActions = true
+  showActions = true,
+  showModerationInfo = false,
+  qualityScore,
+  userTrustScore
 }: ReviewDisplayProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
@@ -89,12 +98,28 @@ export function ReviewDisplay({
                     {review.family_member.relationship}
                   </span>
                 )}
+                {/* Trust Score Display */}
+                {showModerationInfo && userTrustScore && (
+                  <TrustScore 
+                    trustScore={userTrustScore} 
+                    showDetails={false}
+                    className="ml-2"
+                  />
+                )}
               </div>
               <div className="flex items-center space-x-2 mt-1">
                 <StarRating value={review.rating} size="sm" />
                 <span className="text-sm font-semibold text-primary-600">
                   {formatRating(review.rating)}/10
                 </span>
+                {/* Quality Score Display */}
+                {showModerationInfo && qualityScore && (
+                  <QualityScore 
+                    score={qualityScore} 
+                    showDetails={false}
+                    className="ml-2"
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -140,16 +165,16 @@ export function ReviewDisplay({
                     </>
                   ) : (
                     onReport && (
-                      <button
-                        onClick={() => {
-                          onReport(review.id);
-                          setShowMenu(false);
-                        }}
-                        className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      >
-                        <Flag className="h-3 w-3 mr-2" />
-                        Report
-                      </button>
+                      <ContentReport
+                        contentType="review"
+                        contentId={review.id}
+                        triggerComponent={
+                          <button className="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left">
+                            <Flag className="h-3 w-3 mr-2" />
+                            Report
+                          </button>
+                        }
+                      />
                     )
                   )}
                 </div>
