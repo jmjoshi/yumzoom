@@ -2,17 +2,22 @@
 
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { AdvancedSearchFiltersComponent } from '@/components/restaurant/AdvancedSearchFilters';
 import { SearchResults } from '@/components/restaurant/SearchResults';
+import { EnhancedSearchFilters } from '@/components/search/EnhancedSearchFilters';
+import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
+import { AccessibilityPanel } from '@/components/accessibility/AccessibilityPanel';
 import { useAdvancedSearch } from '@/hooks/useAdvancedSearch';
 import { AdvancedSearchFilters } from '@/types/search';
-import { Search, TrendingUp, Clock, MapPin, Utensils } from 'lucide-react';
+import { Search, TrendingUp, Clock, MapPin, Utensils, Globe, Accessibility } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Force dynamic rendering to prevent static generation
 export const dynamic = 'force-dynamic';
 
 export default function AdvancedSearchPage() {
+  const t = useTranslations();
   const router = useRouter();
   const {
     searchState,
@@ -25,6 +30,7 @@ export default function AdvancedSearchPage() {
   } = useAdvancedSearch();
 
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [useEnhancedFilters, setUseEnhancedFilters] = useState(false);
 
   const handleFiltersChange = useCallback((newFilters: Partial<AdvancedSearchFilters>) => {
     updateFilters(newFilters);
@@ -57,19 +63,19 @@ export default function AdvancedSearchPage() {
   }, [router]);
 
   const popularSearches = [
-    'Pizza',
-    'Sushi',
-    'Burgers',
-    'Italian cuisine',
-    'Vegetarian options',
-    'Gluten-free'
+    t('search.popular.pizza') || 'Pizza',
+    t('search.popular.sushi') || 'Sushi',
+    t('search.popular.burgers') || 'Burgers',
+    t('search.popular.italian') || 'Italian cuisine',
+    t('search.popular.vegetarian') || 'Vegetarian options',
+    t('search.popular.glutenfree') || 'Gluten-free'
   ];
 
   const trendingLocations = [
-    'Downtown',
-    'Midtown',
-    'Brooklyn',
-    'Upper East Side'
+    t('locations.downtown') || 'Downtown',
+    t('locations.midtown') || 'Midtown',
+    t('locations.brooklyn') || 'Brooklyn',
+    t('locations.uppereast') || 'Upper East Side'
   ];
 
   return (
@@ -77,30 +83,81 @@ export default function AdvancedSearchPage() {
       {/* Header Section */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Advanced Restaurant Search
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Find the perfect dining experience with our powerful search tools. 
-              Search restaurants, menu items, dietary options, and more.
-            </p>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="text-center lg:text-left">
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                {t('search.title') || 'Advanced Restaurant Search'}
+              </h1>
+              <p className="text-xl text-gray-600 max-w-3xl">
+                {t('search.subtitle') || 'Find the perfect dining experience with our powerful search tools. Search restaurants, menu items, dietary options, and more.'}
+              </p>
+            </div>
+            
+            {/* Language and Accessibility Controls */}
+            <div className="flex items-center gap-4 justify-center lg:justify-end">
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-gray-500" />
+                <LanguageSwitcher variant="dropdown" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Accessibility className="h-5 w-5 text-gray-500" />
+                <AccessibilityPanel />
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Filters Toggle */}
+          <div className="mt-6 flex justify-center">
+            <div className="bg-gray-100 p-1 rounded-lg flex">
+              <button
+                onClick={() => setUseEnhancedFilters(false)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  !useEnhancedFilters
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {t('search.filters.standard') || 'Standard Search'}
+              </button>
+              <button
+                onClick={() => setUseEnhancedFilters(true)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  useEnhancedFilters
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {t('search.filters.enhanced') || 'Enhanced Filters'}
+                <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                  {t('common.new') || 'New'}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Filters */}
-        <AdvancedSearchFiltersComponent
-          filters={searchState.filters}
-          onFiltersChange={handleFiltersChange}
-          onSearch={handleSearch}
-          suggestions={suggestions}
-          onGetSuggestions={handleGetSuggestions}
-          loading={searchState.loading}
-          resultCount={searchState.totalCount}
-          className="mb-8"
-        />
+        {/* Search Filters - Choose between standard and enhanced */}
+        {useEnhancedFilters ? (
+          <EnhancedSearchFilters
+            onSearch={handleSearch}
+            loading={searchState.loading}
+            resultCount={searchState.totalCount}
+            className="mb-8"
+          />
+        ) : (
+          <AdvancedSearchFiltersComponent
+            filters={searchState.filters}
+            onFiltersChange={handleFiltersChange}
+            onSearch={handleSearch}
+            suggestions={suggestions}
+            onGetSuggestions={handleGetSuggestions}
+            loading={searchState.loading}
+            resultCount={searchState.totalCount}
+            className="mb-8"
+          />
+        )}
 
         {/* Quick Help / Popular Searches (show when no search has been performed) */}
         {searchState.results.length === 0 && !searchState.loading && !searchState.filters.searchQuery && (
@@ -109,7 +166,9 @@ export default function AdvancedSearchPage() {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="h-5 w-5 text-blue-500" />
-                <h3 className="text-lg font-semibold text-gray-900">Popular Searches</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {t('search.popular.title') || 'Popular Searches'}
+                </h3>
               </div>
               <div className="space-y-2">
                 {popularSearches.map((search, index) => (
@@ -117,6 +176,7 @@ export default function AdvancedSearchPage() {
                     key={index}
                     onClick={() => handleFiltersChange({ searchQuery: search })}
                     className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                    aria-label={`Search for ${search}`}
                   >
                     <Search className="h-4 w-4 inline mr-2 text-gray-400" />
                     {search}
@@ -129,7 +189,9 @@ export default function AdvancedSearchPage() {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center gap-2 mb-4">
                 <MapPin className="h-5 w-5 text-green-500" />
-                <h3 className="text-lg font-semibold text-gray-900">Trending Locations</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {t('search.locations.title') || 'Trending Locations'}
+                </h3>
               </div>
               <div className="space-y-2">
                 {trendingLocations.map((location, index) => (
@@ -137,6 +199,7 @@ export default function AdvancedSearchPage() {
                     key={index}
                     onClick={() => handleFiltersChange({ location })}
                     className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                    aria-label={`Search in ${location}`}
                   >
                     <MapPin className="h-4 w-4 inline mr-2 text-gray-400" />
                     {location}
@@ -149,38 +212,45 @@ export default function AdvancedSearchPage() {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Utensils className="h-5 w-5 text-orange-500" />
-                <h3 className="text-lg font-semibold text-gray-900">Quick Filters</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {t('search.quickfilters.title') || 'Quick Filters'}
+                </h3>
               </div>
               <div className="space-y-2">
                 <button
                   onClick={() => handleFiltersChange({ isVegetarian: true })}
                   className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                  aria-label="Filter for vegetarian options"
                 >
-                  🌱 Vegetarian Options
+                  🌱 {t('dietary.vegetarian') || 'Vegetarian Options'}
                 </button>
                 <button
                   onClick={() => handleFiltersChange({ isVegan: true })}
                   className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                  aria-label="Filter for vegan options"
                 >
-                  💚 Vegan Options
+                  💚 {t('dietary.vegan') || 'Vegan Options'}
                 </button>
                 <button
                   onClick={() => handleFiltersChange({ isGlutenfree: true })}
                   className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                  aria-label="Filter for gluten-free options"
                 >
-                  🛡️ Gluten-Free Options
+                  🛡️ {t('dietary.glutenfree') || 'Gluten-Free Options'}
                 </button>
                 <button
                   onClick={() => handleFiltersChange({ minRating: 4 })}
                   className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                  aria-label="Filter for highly rated restaurants"
                 >
-                  ⭐ Highly Rated (4+ stars)
+                  ⭐ {t('search.highrated') || 'Highly Rated (4+ stars)'}
                 </button>
                 <button
                   onClick={() => handleFiltersChange({ priceRange: '$' })}
                   className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                  aria-label="Filter for budget friendly options"
                 >
-                  💰 Budget Friendly
+                  💰 {t('search.budget') || 'Budget Friendly'}
                 </button>
               </div>
             </div>

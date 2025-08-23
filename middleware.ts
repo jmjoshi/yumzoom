@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { securityMonitor } from './lib/monitoring';
+import createIntlMiddleware from 'next-intl/middleware';
+import { locales, defaultLocale } from './i18n';
+
+// Create internationalization middleware
+const intlMiddleware = createIntlMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: 'as-needed'
+});
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
@@ -68,6 +77,25 @@ function getRateLimit(req: NextRequest): boolean {
 }
 
 export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  
+  // Skip internationalization for API routes, static files, and internal Next.js routes
+  const shouldSkipIntl = 
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/_next') ||
+    pathname.includes('.') ||
+    pathname.startsWith('/manifest') ||
+    pathname.startsWith('/sw') ||
+    pathname.startsWith('/favicon');
+
+  if (!shouldSkipIntl) {
+    // Apply internationalization middleware first
+    const intlResponse = intlMiddleware(req);
+    if (intlResponse) {
+      return intlResponse;
+    }
+  }
+
   const ip = req.ip || 'unknown';
   
   // IP allowlisting
@@ -113,7 +141,9 @@ export async function middleware(req: NextRequest) {
 // Configure which routes to apply middleware to
 export const config = {
   matcher: [
-    // Apply to all API routes
+    // Apply internationalization to all pages except API routes and static files
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest|sw).*)',
+    // Apply security to all API routes
     '/api/:path*',
     // Apply to auth routes
     '/(signin|signup|dashboard)/:path*',
