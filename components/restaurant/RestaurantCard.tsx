@@ -3,34 +3,40 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { StarRating } from '@/components/ui/Rating';
-import { Restaurant } from '@/types/restaurant';
+import StarRating from '@/components/ui/StarRating';
+import { Restaurant, RestaurantWithCharacteristics } from '@/types/restaurant';
 import { MapPin, Phone, Globe, Star, DollarSign, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface RestaurantCardProps {
-  restaurant: Restaurant;
+  restaurant: Restaurant | RestaurantWithCharacteristics;
   averageRating?: number;
   showSearchHighlight?: boolean;
   searchQuery?: string;
+  showCharacteristics?: boolean;
 }
 
 export function RestaurantCard({ 
   restaurant, 
   averageRating,
   showSearchHighlight = false,
-  searchQuery = ''
+  searchQuery = '',
+  showCharacteristics = true
 }: RestaurantCardProps) {
   const [calculatedRating, setCalculatedRating] = useState(averageRating || 0);
   const [ratingCount, setRatingCount] = useState(0);
   const [averagePrice, setAveragePrice] = useState<number | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [characteristics, setCharacteristics] = useState<any>(null);
 
   useEffect(() => {
     if (!averageRating) {
       fetchRestaurantData();
     }
-  }, [restaurant.id, averageRating]);
+    if (showCharacteristics) {
+      fetchCharacteristics();
+    }
+  }, [restaurant.id, averageRating, showCharacteristics]);
 
   const fetchRestaurantData = async () => {
     try {
@@ -69,6 +75,18 @@ export function RestaurantCard({
     }
   };
 
+  const fetchCharacteristics = async () => {
+    try {
+      const response = await fetch(`/api/restaurants/${restaurant.id}/characteristics`);
+      if (response.ok) {
+        const data = await response.json();
+        setCharacteristics(data.characteristics);
+      }
+    } catch (error) {
+      console.error('Error fetching restaurant characteristics:', error);
+    }
+  };
+
   const highlightText = (text: string, query: string) => {
     if (!query || !showSearchHighlight) return text;
     
@@ -89,7 +107,8 @@ export function RestaurantCard({
     return '$$$$';
   };
 
-  const displayRating = averageRating || calculatedRating;
+  const displayRating = averageRating || calculatedRating || (characteristics?.overall_rating?.average || 0);
+  const displayRatingCount = ratingCount || (characteristics?.overall_rating?.count || 0);
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 group hover:-translate-y-1 overflow-hidden flex flex-col h-full">
@@ -132,9 +151,9 @@ export function RestaurantCard({
           <div className="flex items-center justify-between">
             {displayRating > 0 && (
               <div className="flex items-center space-x-2">
-                <StarRating value={displayRating} size="sm" />
+                <StarRating rating={displayRating} size="sm" />
                 <span className="text-sm text-gray-500">
-                  ({ratingCount} rating{ratingCount !== 1 ? 's' : ''})
+                  ({displayRatingCount} rating{displayRatingCount !== 1 ? 's' : ''})
                 </span>
               </div>
             )}
@@ -189,6 +208,105 @@ export function RestaurantCard({
             </div>
           </div>
         </div>
+
+        {/* Restaurant Characteristics Section */}
+        {showCharacteristics && characteristics && Object.keys(characteristics).length > 0 && (
+          <div className="px-6 py-3 border-t border-gray-100">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {characteristics.food_quality && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Food Quality</span>
+                  <div className="flex items-center gap-1">
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-2.5 h-2.5 ${
+                            i < Math.round(characteristics.food_quality.average / 2)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'fill-gray-200 text-gray-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-gray-500 ml-1">
+                      {characteristics.food_quality.average.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {characteristics.service && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Service</span>
+                  <div className="flex items-center gap-1">
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-2.5 h-2.5 ${
+                            i < Math.round(characteristics.service.average / 2)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'fill-gray-200 text-gray-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-gray-500 ml-1">
+                      {characteristics.service.average.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {characteristics.ambience && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Ambience</span>
+                  <div className="flex items-center gap-1">
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-2.5 h-2.5 ${
+                            i < Math.round(characteristics.ambience.average / 2)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'fill-gray-200 text-gray-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-gray-500 ml-1">
+                      {characteristics.ambience.average.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {characteristics.value_for_money && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Value</span>
+                  <div className="flex items-center gap-1">
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-2.5 h-2.5 ${
+                            i < Math.round(characteristics.value_for_money.average / 2)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'fill-gray-200 text-gray-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-gray-500 ml-1">
+                      {characteristics.value_for_money.average.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         
         {/* Button Section - Always at bottom */}
         <div className="mt-4 px-6 pb-6">
@@ -199,10 +317,10 @@ export function RestaurantCard({
             >
               View & Rate
             </Link>
-            {ratingCount > 0 && (
+            {displayRatingCount > 0 && (
               <div className="flex items-center text-xs text-gray-500 px-2">
                 <Users className="h-3 w-3 mr-1" />
-                {ratingCount}
+                {displayRatingCount}
               </div>
             )}
           </div>

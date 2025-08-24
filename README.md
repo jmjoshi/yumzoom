@@ -8,6 +8,7 @@ A Next.js application that allows families to discover, rate, and review restaur
 - **Family Management**: Create and manage family member profiles
 - **Restaurant Discovery**: Browse restaurants with detailed information
 - **Rating System**: Rate restaurants and menu items (1-10 scale)
+- **Restaurant Characteristics Rating**: Detailed 1-10 star ratings for ambience, decor, service, cleanliness, noise level, value for money, food quality, and overall rating
 - **Dashboard Analytics**: View family dining patterns and insights
 - **Admin Interface**: Comprehensive restaurant and menu management
 
@@ -15,6 +16,7 @@ A Next.js application that allows families to discover, rate, and review restaur
 - ✅ User authentication with Supabase
 - ✅ Family member management
 - ✅ Restaurant browsing and rating
+- ✅ Restaurant characteristics rating system (8 detailed categories)
 - ✅ Admin restaurant/menu management
 - ✅ Security features and monitoring
 - ✅ Responsive design

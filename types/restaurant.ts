@@ -17,6 +17,26 @@ export interface Restaurant {
   updated_at: string;
 }
 
+export interface RestaurantCharacteristics {
+  id: string;
+  restaurant_id: string;
+  ambience_rating: number;
+  decor_rating: number;
+  service_rating: number;
+  cleanliness_rating: number;
+  noise_level_rating: number;
+  value_for_money_rating: number;
+  food_quality_rating: number;
+  overall_rating: number;
+  total_ratings_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RestaurantWithCharacteristics extends Restaurant {
+  characteristics?: RestaurantCharacteristics;
+}
+
 export interface MenuItem {
   id: string;
   restaurant_id: string;
@@ -110,4 +130,108 @@ export interface ReviewStats {
 export interface CreateReviewVote {
   rating_id: string;
   is_helpful: boolean;
+}
+
+export interface UserRestaurantRating {
+  id: string;
+  user_id: string;
+  restaurant_id: string;
+  ambience_rating: number;
+  decor_rating: number;
+  service_rating: number;
+  cleanliness_rating: number;
+  noise_level_rating: number;
+  value_for_money_rating: number;
+  food_quality_rating: number;
+  overall_rating: number;
+  review_text?: string;
+  visit_date?: string;
+  would_recommend?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RestaurantRatingPhoto {
+  id: string;
+  user_restaurant_rating_id: string;
+  photo_url: string;
+  photo_filename: string;
+  photo_size?: number;
+  photo_type?: 'food' | 'ambience' | 'exterior' | 'interior' | 'menu';
+  upload_order: number;
+  created_at: string;
+}
+
+export interface RestaurantRatingVote {
+  id: string;
+  user_restaurant_rating_id: string;
+  user_id: string;
+  is_helpful: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserRestaurantRatingWithDetails extends UserRestaurantRating {
+  photos?: RestaurantRatingPhoto[];
+  helpful_count: number;
+  not_helpful_count: number;
+  net_helpfulness: number;
+  user_vote?: RestaurantRatingVote;
+  user_profile?: {
+    first_name: string;
+    last_name: string;
+    avatar_url?: string;
+  };
+}
+
+export interface CreateRestaurantRating {
+  restaurant_id: string;
+  ambience_rating: number;
+  decor_rating: number;
+  service_rating: number;
+  cleanliness_rating: number;
+  noise_level_rating: number;
+  value_for_money_rating: number;
+  food_quality_rating: number;
+  overall_rating: number;
+  review_text?: string;
+  visit_date?: string;
+  would_recommend?: boolean;
+  photos?: File[];
+}
+
+export interface UpdateRestaurantRating {
+  ambience_rating: number;
+  decor_rating: number;
+  service_rating: number;
+  cleanliness_rating: number;
+  noise_level_rating: number;
+  value_for_money_rating: number;
+  food_quality_rating: number;
+  overall_rating: number;
+  review_text?: string;
+  visit_date?: string;
+  would_recommend?: boolean;
+}
+
+export interface RestaurantCharacteristicsBreakdown {
+  ambience_rating: number;
+  decor_rating: number;
+  service_rating: number;
+  cleanliness_rating: number;
+  noise_level_rating: number;
+  value_for_money_rating: number;
+  food_quality_rating: number;
+  overall_rating: number;
+  total_ratings_count: number;
+  rating_distribution: {
+    ambience: Record<string, number>;
+    decor: Record<string, number>;
+    service: Record<string, number>;
+    cleanliness: Record<string, number>;
+    noise_level: Record<string, number>;
+    value_for_money: Record<string, number>;
+    food_quality: Record<string, number>;
+    overall: Record<string, number>;
+  };
 }
