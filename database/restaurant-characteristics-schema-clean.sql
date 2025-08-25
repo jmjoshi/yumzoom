@@ -1,5 +1,5 @@
--- Restaurant Characteristics Schema Migration
--- Adds detailed restaurant characteristics and ratings
+-- Restaurant Characteristics Schema Migration - CLEAN VERSION
+-- This version has NO sample data to prevent foreign key errors
 
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -59,7 +59,7 @@ CREATE TABLE restaurant_rating_photos (
     photo_url text NOT NULL,
     photo_filename text NOT NULL,
     photo_size integer,
-    photo_type text, -- 'food', 'ambience', 'exterior', 'interior', 'menu'
+    photo_type text,
     upload_order integer DEFAULT 1,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -228,8 +228,6 @@ RETURNS TABLE (
     website text,
     cuisine_type text,
     image_url text,
-    latitude decimal,
-    longitude decimal,
     rating decimal,
     review_count integer,
     price_range integer,
@@ -257,8 +255,6 @@ BEGIN
         r.website,
         r.cuisine_type,
         r.image_url,
-        r.latitude,
-        r.longitude,
         r.rating,
         r.review_count,
         r.price_range,
@@ -296,40 +292,7 @@ BEGIN
     END IF;
 END $$;
 
--- Sample data section removed to prevent foreign key errors
--- To add sample data later, first ensure you have valid user IDs:
--- 1. Create a user account through your application
--- 2. Find the user ID: SELECT id FROM auth.users LIMIT 1;
--- 3. Replace the user_id in the INSERT statement with the actual ID
--- 4. Ensure you have restaurants in your restaurants table
-
--- Example of how to add sample data safely:
-/*
--- First, check if you have users and restaurants:
--- SELECT id FROM auth.users LIMIT 1;
--- SELECT id FROM restaurants LIMIT 5;
-
--- Then add sample ratings (replace with actual IDs):
-INSERT INTO user_restaurant_ratings (
-    user_id, 
-    restaurant_id, 
-    ambience_rating, 
-    decor_rating, 
-    service_rating, 
-    cleanliness_rating, 
-    noise_level_rating, 
-    value_for_money_rating, 
-    food_quality_rating, 
-    overall_rating,
-    review_text,
-    visit_date,
-    would_recommend
-) VALUES (
-    'YOUR_ACTUAL_USER_ID_HERE'::uuid,
-    'YOUR_ACTUAL_RESTAURANT_ID_HERE'::uuid,
-    8, 7, 9, 10, 6, 8, 9, 8,
-    'Great restaurant with excellent food and service!',
-    CURRENT_DATE - 5,
-    true
-);
-*/
+-- Schema migration completed successfully!
+-- Tables created: restaurant_characteristics, user_restaurant_ratings, restaurant_rating_photos, restaurant_rating_votes
+-- Functions created: update_restaurant_characteristics(), get_restaurant_with_characteristics()
+-- All indexes, triggers, and RLS policies have been applied

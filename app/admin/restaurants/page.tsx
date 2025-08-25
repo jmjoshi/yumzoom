@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { AdminOnly } from '@/components/auth/RoleGuard';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +34,14 @@ const initialForm: RestaurantForm = {
 };
 
 export default function AdminRestaurantsPage() {
+  return (
+    <AdminOnly>
+      <AdminRestaurantsContent />
+    </AdminOnly>
+  );
+}
+
+function AdminRestaurantsContent() {
   const { user } = useAuth();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);

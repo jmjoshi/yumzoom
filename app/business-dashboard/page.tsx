@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
+import { BusinessPartnerOnly } from '@/components/auth/RoleGuard';
 import { 
   CreditCard, 
   TrendingUp, 
@@ -19,7 +20,8 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  DollarSign
+  DollarSign,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { SubscriptionPlan, RestaurantSubscription, BusinessDashboardStats } from '@/types/business-platform';
@@ -29,6 +31,29 @@ interface BusinessDashboardProps {
 }
 
 export default function BusinessDashboard({ restaurantId }: BusinessDashboardProps) {
+  return (
+    <BusinessPartnerOnly
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 text-center">
+            <Building2 className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Business Partner Access Required</h2>
+            <p className="text-gray-600 mb-4">
+              This business dashboard is only accessible to business partners and administrators.
+            </p>
+            <p className="text-sm text-gray-500">
+              Contact us to become a business partner and access platform analytics.
+            </p>
+          </div>
+        </div>
+      }
+    >
+      <BusinessDashboardContent restaurantId={restaurantId} />
+    </BusinessPartnerOnly>
+  );
+}
+
+function BusinessDashboardContent({ restaurantId }: BusinessDashboardProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<BusinessDashboardStats | null>(null);

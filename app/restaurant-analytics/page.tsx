@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
+import { RestaurantOwnerOnly } from '@/components/auth/RoleGuard';
 import { useRestaurantAnalytics } from '@/hooks/useRestaurantAnalytics';
 import RestaurantAnalyticsDashboard from '@/components/restaurant/RestaurantAnalyticsDashboard';
 import MenuItemAnalysis from '@/components/restaurant/MenuItemAnalysis';
@@ -26,6 +27,32 @@ import { ANALYTICS_TIME_RANGES } from '@/types/restaurant-analytics';
 type AnalyticsTab = 'dashboard' | 'menu' | 'feedback';
 
 export default function RestaurantAnalyticsPage() {
+  return (
+    <RestaurantOwnerOnly 
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 text-center">
+            <Building2 className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Restaurant Owner Access Required</h2>
+            <p className="text-gray-600 mb-4">
+              This page is only accessible to restaurant owners and administrators.
+            </p>
+            <a
+              href="/restaurant-owner"
+              className="bg-orange-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+            >
+              Become a Restaurant Owner
+            </a>
+          </div>
+        </div>
+      }
+    >
+      <RestaurantAnalyticsContent />
+    </RestaurantOwnerOnly>
+  );
+}
+
+function RestaurantAnalyticsContent() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<AnalyticsTab>('dashboard');
   const [showExportMenu, setShowExportMenu] = useState(false);

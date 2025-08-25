@@ -1,33 +1,83 @@
 # YumZoom - Family Restaurant Rating Platform
 
-A Next.js application that allows families to discover, rate, and review restaurants together.
+A Next.js application that allows families to discover, rate, and review restaurants together with comprehensive role-based access control and business intelligence features.
 
 ## Features
 
 ### Core Functionality
+- **Role-Based Access Control**: 4-tier user system (Customer, Restaurant Owner, Business Partner, Admin)
 - **Family Management**: Create and manage family member profiles
-- **Restaurant Discovery**: Browse restaurants with detailed information
+- **Restaurant Discovery**: Browse restaurants with detailed information and images
 - **Rating System**: Rate restaurants and menu items (1-10 scale)
 - **Restaurant Characteristics Rating**: Detailed 1-10 star ratings for ambience, decor, service, cleanliness, noise level, value for money, food quality, and overall rating
 - **Dashboard Analytics**: View family dining patterns and insights
+- **Business Intelligence**: Restaurant analytics and performance metrics
 - **Admin Interface**: Comprehensive restaurant and menu management
 
 ### Current Implementation
+- ✅ Role-based access control with 4 user types
 - ✅ User authentication with Supabase
+- ✅ Protected routes and components
 - ✅ Family member management
-- ✅ Restaurant browsing and rating
+- ✅ Restaurant browsing and rating with images
 - ✅ Restaurant characteristics rating system (8 detailed categories)
 - ✅ Admin restaurant/menu management
+- ✅ Restaurant owner analytics dashboard
+- ✅ Business partner platform access
 - ✅ Security features and monitoring
-- ✅ Responsive design
+- ✅ Responsive design with proper error handling
 
-### Planned Features (AI Agent Recommendations)
-- 🔄 Advanced search and filtering
-- 🔄 Enhanced review system with photos
-- 🔄 User profiles and preferences
-- 🔄 Analytics dashboard
-- 🔄 Mobile application (PWA)
-- 🔄 Social features and integrations
+## User Roles & Access Control
+
+### Customer (Default Role)
+- Browse and search restaurants
+- Create and manage family profiles
+- Rate and review restaurants
+- View personal dashboard and analytics
+- Access family features and social functionality
+
+### Restaurant Owner
+- All customer features
+- Access restaurant analytics dashboard
+- Manage restaurant profiles and information
+- View customer feedback and reviews
+- Track restaurant performance metrics
+
+### Business Partner
+- All customer features
+- Access business intelligence platform
+- View market analytics and trends
+- Manage business partnerships
+- Access enterprise-level insights
+
+### Admin
+- Full platform access and management
+- User and role management
+- Restaurant and menu administration
+- System monitoring and analytics
+- Platform configuration and settings
+
+## Test Users
+
+For testing different roles, use these pre-configured accounts:
+
+### Customers
+- sarah.johnson@example.com / password123
+- mike.williams@example.com / password123
+- emma.brown@example.com / password123
+
+### Restaurant Owners  
+- maria.gonzalez@example.com / password123
+- david.chen@example.com / password123
+- lisa.taylor@example.com / password123
+
+### Business Partners
+- james.anderson@example.com / password123
+- jennifer.white@example.com / password123
+
+### Admins
+- admin@yumzoom.com / admin123
+- jane.smith@example.com / password123
 
 ## Tech Stack
 
@@ -71,6 +121,8 @@ A Next.js application that allows families to discover, rate, and review restaur
    - Go to your Supabase dashboard
    - Run the SQL from `database/schema.sql`
    - Run the SQL from `database/fix-admin-policies.sql`
+   - Run the SQL from `database/add-restaurant-images.sql` (for restaurant images)
+   - Run the SQL from `database/test-rbac.sql` (for test users with different roles)
 
 5. **Run the development server**
    ```bash
@@ -86,17 +138,24 @@ A Next.js application that allows families to discover, rate, and review restaur
 yumzoom/
 ├── app/                    # Next.js 14 App Router
 │   ├── (auth)/            # Authentication pages
-│   ├── admin/             # Admin interface
+│   ├── admin/             # Admin interface (Admin only)
 │   ├── api/               # API routes
+│   ├── business-dashboard/ # Business partner dashboard
 │   ├── dashboard/         # User dashboard
 │   ├── family/            # Family management
+│   ├── restaurant-owner/  # Restaurant owner dashboard
 │   └── restaurants/       # Restaurant pages
 ├── components/            # Reusable React components
+│   ├── auth/              # Authentication & role-based protection
+│   ├── business-platform/ # Business intelligence components
+│   ├── restaurant/        # Restaurant-related components
+│   └── ui/                # UI components
 ├── database/              # SQL schemas and migrations
 ├── documents/             # Project documentation
 │   └── requirements/      # Feature requirements docs
 ├── hooks/                 # Custom React hooks
 ├── lib/                   # Utility libraries
+│   └── rbac.ts           # Role-based access control framework
 ├── public/                # Static assets
 ├── styles/                # Global styles
 └── types/                 # TypeScript type definitions
@@ -115,6 +174,11 @@ SQL files in the `database/` directory:
 - `schema.sql` - Initial database setup
 - `fix-admin-policies.sql` - Row Level Security policies for admin operations
 - `fix-images.sql` - Update broken image URLs
+- `add-restaurant-images.sql` - Add Unsplash image URLs to restaurants
+- `test-rbac.sql` - Create test users for all roles
+- `social-features-schema.sql` - Social functionality and user interactions
+- `business-platform-schema.sql` - Business intelligence and analytics
+- `restaurant-analytics-schema.sql` - Restaurant owner analytics
 
 ## Contributing
 
@@ -125,10 +189,13 @@ SQL files in the `database/` directory:
 
 ## Security
 
+- Role-based access control (RBAC) with 4 user types
+- Protected routes and components
 - Environment variables are excluded from version control
 - Supabase Row Level Security (RLS) policies implemented
 - Security monitoring and alerts configured
 - Rate limiting and geo-blocking features included
+- Unauthorized access protection and proper error handling
 
 ## Documentation
 
