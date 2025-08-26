@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { MenuItemCard } from '@/components/restaurant/MenuItemCard';
 import { MenuSearch, type MenuFilters } from '@/components/restaurant/MenuSearch';
+import RestaurantCharacteristics from '@/components/restaurant/RestaurantCharacteristics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Restaurant, MenuItemWithRatings, UserRating, CreateRating } from '@/types/restaurant';
 import { FamilyMember } from '@/types/user';
@@ -470,6 +471,12 @@ export default function RestaurantDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Restaurant Characteristics */}
+      <RestaurantCharacteristics 
+        restaurantId={restaurant.id}
+        onRatingSubmitted={fetchRestaurantData}
+      />
 
       {/* Menu Items */}
       <div className="space-y-8">
