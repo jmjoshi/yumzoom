@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import StarRating from '@/components/ui/StarRating';
-import { Restaurant, RestaurantWithCharacteristics } from '@/types/restaurant';
+import { Restaurant, RestaurantWithCharacteristics, Rating, MenuItem } from '@/types/restaurant';
 import { MapPin, Phone, Globe, Star, DollarSign, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -52,7 +52,7 @@ export function RestaurantCard({
         .eq('menu_items.restaurant_id', restaurant.id);
 
       if (ratings && ratings.length > 0) {
-        const totalRating = ratings.reduce((sum, r) => sum + r.rating, 0);
+        const totalRating = ratings.reduce((sum: number, r: Rating) => sum + r.rating, 0);
         const avgRating = totalRating / ratings.length;
         setCalculatedRating(avgRating);
         setRatingCount(ratings.length);
@@ -66,7 +66,7 @@ export function RestaurantCard({
         .not('price', 'is', null);
 
       if (menuItems && menuItems.length > 0) {
-        const totalPrice = menuItems.reduce((sum, item) => sum + (item.price || 0), 0);
+        const totalPrice = menuItems.reduce((sum: number, item: MenuItem) => sum + (item.price || 0), 0);
         const avgPrice = totalPrice / menuItems.length;
         setAveragePrice(avgPrice);
       }

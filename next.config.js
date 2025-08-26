@@ -88,6 +88,17 @@ const nextConfig = {
   env: {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   },
+  // Disable React DevTools warnings in development
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'react-dom$': 'react-dom/profiling',
+        'scheduler/tracing': 'scheduler/tracing-profiling',
+      };
+    }
+    return config;
+  },
 }
 
 module.exports = withPWA(nextConfig)

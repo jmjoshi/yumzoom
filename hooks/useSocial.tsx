@@ -17,6 +17,7 @@ import {
   CreateCollaborationOption,
   CollaborationVote,
   CreateCollaborationVote,
+  CollaborationParticipant,
   SocialDiscoverySettings,
   UpdateSocialDiscoverySettings,
   FriendSuggestion,
@@ -509,7 +510,7 @@ export function useSocial(): UseSocialReturn {
 
       // Manually fetch participant profiles
       const participantsWithProfiles = await Promise.all(
-        (participants || []).map(async (participant) => {
+        (participants || []).map(async (participant: CollaborationParticipant) => {
           const [userProfile, familyMember] = await Promise.all([
             participant.user_id ? supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', participant.user_id).single() : Promise.resolve({ data: null }),
             participant.family_member_id ? supabase.from('family_members').select('name, relationship, avatar_url').eq('id', participant.family_member_id).single() : Promise.resolve({ data: null })
@@ -533,7 +534,7 @@ export function useSocial(): UseSocialReturn {
 
       // Manually fetch option details
       const optionsWithDetails = await Promise.all(
-        (options || []).map(async (option) => {
+        (options || []).map(async (option: CollaborationOption) => {
           const [restaurant, suggestedByProfile, suggestedByFamilyMember] = await Promise.all([
             option.restaurant_id ? supabase.from('restaurants').select('id, name, cuisine_type, image_url, address, description').eq('id', option.restaurant_id).single() : Promise.resolve({ data: null }),
             option.suggested_by_user_id ? supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', option.suggested_by_user_id).single() : Promise.resolve({ data: null }),
@@ -561,7 +562,7 @@ export function useSocial(): UseSocialReturn {
       // Enhance options with user votes
       const enhancedOptions = optionsWithDetails.map(option => ({
         ...option,
-        user_vote: userVotes.find(vote => vote.option_id === option.id)
+        user_vote: userVotes.find((vote: CollaborationVote) => vote.option_id === option.id)
       }));
 
       // Find winning option
@@ -601,7 +602,7 @@ export function useSocial(): UseSocialReturn {
 
       if (error) throw error;
 
-      const totalVotes = options.reduce((sum, option) => sum + option.vote_count, 0);
+      const totalVotes = options.reduce((sum: number, option: CollaborationOption) => sum + option.vote_count, 0);
       const { data: participants } = await supabase
         .from('collaboration_participants')
         .select('id')
@@ -610,7 +611,7 @@ export function useSocial(): UseSocialReturn {
       const totalParticipants = participants?.length || 0;
       const participationRate = totalParticipants > 0 ? (totalVotes / totalParticipants) * 100 : 0;
 
-      const enhancedOptions = options.map(option => ({
+      const enhancedOptions = options.map((option: CollaborationOption) => ({
         ...option,
         percentage: totalVotes > 0 ? (option.vote_count / totalVotes) * 100 : 0
       }));
@@ -682,7 +683,7 @@ export function useSocial(): UseSocialReturn {
 
       // Manually fetch profiles for accepted connections
       const connectionsWithProfiles = await Promise.all(
-        (acceptedConnections || []).map(async (connection) => {
+        (acceptedConnections || []).map(async (connection: FamilyConnection) => {
           const [followerProfile, followingProfile] = await Promise.all([
             supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.follower_user_id).single(),
             supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.following_user_id).single()
@@ -707,7 +708,7 @@ export function useSocial(): UseSocialReturn {
 
       // Manually fetch profiles for pending received
       const pendingReceivedWithProfiles = await Promise.all(
-        (pendingReceived || []).map(async (connection) => {
+        (pendingReceived || []).map(async (connection: FamilyConnection) => {
           const [followerProfile, followingProfile] = await Promise.all([
             supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.follower_user_id).single(),
             supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.following_user_id).single()
@@ -732,7 +733,7 @@ export function useSocial(): UseSocialReturn {
 
       // Manually fetch profiles for pending sent
       const pendingSentWithProfiles = await Promise.all(
-        (pendingSent || []).map(async (connection) => {
+        (pendingSent || []).map(async (connection: FamilyConnection) => {
           const [followerProfile, followingProfile] = await Promise.all([
             supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.follower_user_id).single(),
             supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', connection.following_user_id).single()
@@ -791,7 +792,7 @@ export function useSocial(): UseSocialReturn {
 
       // Manually fetch profiles and restaurant data for received recommendations
       const receivedWithProfiles = await Promise.all(
-        (received || []).map(async (rec) => {
+        (received || []).map(async (rec: FriendRecommendation) => {
           const [recommenderProfile, restaurant] = await Promise.all([
             supabase.from('user_profiles').select('first_name, last_name, avatar_url').eq('id', rec.recommender_user_id).single(),
             supabase.from('restaurants').select('id, name, cuisine_type, image_url, address').eq('id', rec.restaurant_id).single()
@@ -816,7 +817,7 @@ export function useSocial(): UseSocialReturn {
 
       // Manually fetch restaurant data for sent recommendations
       const sentWithProfiles = await Promise.all(
-        (sent || []).map(async (rec) => {
+        (sent || []).map(async (rec: FriendRecommendation) => {
           const restaurant = await supabase.from('restaurants').select('id, name, cuisine_type, image_url, address').eq('id', rec.restaurant_id).single();
           
           return {

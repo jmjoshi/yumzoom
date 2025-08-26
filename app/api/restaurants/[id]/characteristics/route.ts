@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { cookies } from 'next/headers';
+import type { UserRestaurantRating } from '@/types/restaurant';
 
 interface RatingVote {
   id: string;
@@ -41,17 +42,15 @@ export async function GET(
   try {
     const restaurantId = params.id;
 
-    // Get restaurant with characteristics
+    // Get restaurant basic info
     const { data: restaurant, error: restaurantError } = await supabaseAdmin
       .from('restaurants')
-      .select(`
-        *,
-        restaurant_characteristics (*)
-      `)
+      .select('*')
       .eq('id', restaurantId)
       .single();
 
     if (restaurantError) {
+      console.error('Restaurant not found:', restaurantError);
       return NextResponse.json(
         { error: 'Restaurant not found' },
         { status: 404 }
@@ -61,20 +60,7 @@ export async function GET(
     // Get user ratings for this restaurant
     const { data: userRatings, error: ratingsError } = await supabaseAdmin
       .from('user_restaurant_ratings')
-      .select(`
-        *,
-        user_profiles!inner (
-          first_name,
-          last_name,
-          avatar_url
-        ),
-        restaurant_rating_photos (*),
-        restaurant_rating_votes (
-          id,
-          user_id,
-          is_helpful
-        )
-      `)
+      .select('*')
       .eq('restaurant_id', restaurantId)
       .order('created_at', { ascending: false });
 
@@ -82,29 +68,79 @@ export async function GET(
       console.error('Error fetching user ratings:', ratingsError);
     }
 
-    // Calculate helpfulness for each rating
-    const ratingsWithHelpfulness = userRatings?.map((rating: UserRating) => {
-      const votes = rating.restaurant_rating_votes || [];
-      const helpful_count = votes.filter((vote: RatingVote) => vote.is_helpful).length;
-      const not_helpful_count = votes.filter((vote: RatingVote) => !vote.is_helpful).length;
-      
+    // Calculate average characteristics from user ratings
+    let characteristics = null;
+    if (userRatings && userRatings.length > 0) {
+      const totals = userRatings.reduce((acc: {
+        ambience_rating: number;
+        decor_rating: number;
+        service_rating: number;
+        cleanliness_rating: number;
+        noise_level_rating: number;
+        value_for_money_rating: number;
+        food_quality_rating: number;
+        overall_rating: number;
+      }, rating: UserRestaurantRating) => {
+        acc.ambience_rating += rating.ambience_rating || 0;
+        acc.decor_rating += rating.decor_rating || 0;
+        acc.service_rating += rating.service_rating || 0;
+        acc.cleanliness_rating += rating.cleanliness_rating || 0;
+        acc.noise_level_rating += rating.noise_level_rating || 0;
+        acc.value_for_money_rating += rating.value_for_money_rating || 0;
+        acc.food_quality_rating += rating.food_quality_rating || 0;
+        acc.overall_rating += rating.overall_rating || 0;
+        return acc;
+      }, {
+        ambience_rating: 0,
+        decor_rating: 0,
+        service_rating: 0,
+        cleanliness_rating: 0,
+        noise_level_rating: 0,
+        value_for_money_rating: 0,
+        food_quality_rating: 0,
+        overall_rating: 0
+      });
+
+      const count = userRatings.length;
+      characteristics = {
+        restaurant_id: restaurantId,
+        ambience_rating: Math.round((totals.ambience_rating / count) * 10) / 10,
+        decor_rating: Math.round((totals.decor_rating / count) * 10) / 10,
+        service_rating: Math.round((totals.service_rating / count) * 10) / 10,
+        cleanliness_rating: Math.round((totals.cleanliness_rating / count) * 10) / 10,
+        noise_level_rating: Math.round((totals.noise_level_rating / count) * 10) / 10,
+        value_for_money_rating: Math.round((totals.value_for_money_rating / count) * 10) / 10,
+        food_quality_rating: Math.round((totals.food_quality_rating / count) * 10) / 10,
+        overall_rating: Math.round((totals.overall_rating / count) * 10) / 10,
+        total_ratings_count: count
+      };
+    }
+
+    // Add characteristics to restaurant object
+    const restaurantWithCharacteristics = {
+      ...restaurant,
+      characteristics
+    };
+
+    // Calculate helpfulness for each rating (simplified without user profiles for now)
+    const ratingsWithHelpfulness = userRatings?.map((rating: any) => {
       return {
         ...rating,
-        helpful_count,
-        not_helpful_count,
-        net_helpfulness: helpful_count - not_helpful_count
+        helpful_count: 0, // TODO: Implement helpfulness voting
+        not_helpful_count: 0,
+        net_helpfulness: 0
       };
     }) || [];
 
     // Calculate rating distribution for characteristics
-    const ratingDistribution = userRatings?.reduce((acc: Record<string, Record<string, number>>, rating: UserRating) => {
+    const ratingDistribution = userRatings?.reduce((acc: Record<string, Record<string, number>>, rating: any) => {
       const characteristics = [
         'ambience', 'decor', 'service', 'cleanliness', 
         'noise_level', 'value_for_money', 'food_quality', 'overall'
       ];
       
       characteristics.forEach(char => {
-        const ratingValue = (rating as any)[`${char}_rating`];
+        const ratingValue = rating[`${char}_rating`];
         if (ratingValue) {
           if (!acc[char]) acc[char] = {};
           acc[char][ratingValue] = (acc[char][ratingValue] || 0) + 1;
@@ -115,7 +151,7 @@ export async function GET(
     }, {} as Record<string, Record<string, number>>) || {};
 
     const response = {
-      restaurant,
+      restaurant: restaurantWithCharacteristics,
       user_ratings: ratingsWithHelpfulness,
       rating_distribution: ratingDistribution,
       total_ratings: userRatings?.length || 0

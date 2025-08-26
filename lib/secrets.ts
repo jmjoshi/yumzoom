@@ -13,6 +13,8 @@ interface KeyMetadata {
 class SecretsManager {
   private static instance: SecretsManager;
   private supabaseUrl: string;
+  private supabaseClient: any = null; // Cache the client
+  private supabaseAdminClient: any = null; // Cache the admin client
   private keyMetadata: Map<string, KeyMetadata> = new Map();
   private readonly VALIDATION_INTERVAL = 5 * 60 * 1000; // 5 minutes
   private readonly KEY_ROTATION_INTERVAL = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -20,9 +22,11 @@ class SecretsManager {
   private constructor() {
     // Validate environment variables
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      console.warn('Missing SUPABASE_URL environment variable');
       throw new Error('Missing SUPABASE_URL');
     }
     if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.warn('Missing SUPABASE_ANON_KEY environment variable');
       throw new Error('Missing SUPABASE_ANON_KEY');
     }
 
@@ -31,8 +35,8 @@ class SecretsManager {
     // Initialize key metadata
     this.initializeKeyMetadata();
     
-    // Start key validation schedule
-    if (typeof window === 'undefined') { // Only run on server
+    // Start key validation schedule only on server and in production
+    if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
       this.startKeyValidationSchedule();
     }
   }
@@ -158,12 +162,38 @@ class SecretsManager {
       throw new Error(`Invalid or expired ${type} key`);
     }
 
-    return createClient(this.supabaseUrl, metadata.key, {
+    // Return cached client if available
+    if (type === 'anon' && this.supabaseClient) {
+      return this.supabaseClient;
+    }
+    
+    if (type === 'service' && this.supabaseAdminClient) {
+      return this.supabaseAdminClient;
+    }
+
+    // Create new client and cache it
+    const client = createClient(this.supabaseUrl, metadata.key, {
       auth: {
         persistSession: type === 'anon',
         autoRefreshToken: type === 'anon',
+        detectSessionInUrl: false, // Reduce client instances
+        storageKey: type === 'anon' ? 'supabase.auth.token' : `supabase.auth.token.${type}`, // Unique storage keys
       },
+      global: {
+        headers: {
+          'X-Client-Info': `yumzoom-app-${type}`
+        }
+      }
     });
+
+    // Cache the client
+    if (type === 'anon') {
+      this.supabaseClient = client;
+    } else {
+      this.supabaseAdminClient = client;
+    }
+
+    return client;
   }
 
   public async validateKeys(): Promise<boolean> {

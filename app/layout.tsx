@@ -8,8 +8,10 @@ import { PWAInstallPrompt } from '@/components/pwa/PWAInstallPrompt';
 import { OfflineIndicator } from '@/components/pwa/OfflineIndicator';
 import { MobileBottomNavigation, MobileFloatingActionButton } from '@/components/pwa/MobileBottomNavigation';
 import { AdvancedMobileFeatures } from '@/components/pwa/AdvancedMobileFeatures';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
 import '@/styles/globals.css';
+import '@/lib/console-filter'; // Import console filter for development
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -40,18 +42,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
+      { url: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml' },
     ],
+    shortcut: '/favicon.ico',
     apple: [
-      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
-    other: [
-      {
-        rel: 'mask-icon',
-        url: '/icons/safari-pinned-tab.svg',
-        color: '#f59e0b',
-      },
+      { url: '/icons/icon-192x192.svg', sizes: '180x180', type: 'image/svg+xml' },
     ],
   },
   openGraph: {
@@ -111,35 +108,37 @@ export default function RootLayout({
       <body className={inter.className}>
         <PWAProvider>
           <AuthProvider>
-            <div className="min-h-screen bg-gray-50">
-              <OfflineIndicator />
-              <Navbar />
-              <main className="pb-20 md:pb-0">{children}</main>
-              <MobileBottomNavigation />
-              <MobileFloatingActionButton />
-              <AdvancedMobileFeatures />
-              <PWAInstallPrompt />
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: '#363636',
-                    color: '#fff',
-                  },
-                  success: {
+            <ErrorBoundary>
+              <div className="min-h-screen bg-gray-50">
+                <OfflineIndicator />
+                <Navbar />
+                <main className="pb-20 md:pb-0">{children}</main>
+                <MobileBottomNavigation />
+                <MobileFloatingActionButton />
+                <AdvancedMobileFeatures />
+                <PWAInstallPrompt />
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    duration: 4000,
                     style: {
-                      background: '#059669',
+                      background: '#363636',
+                      color: '#fff',
                     },
-                  },
-                  error: {
-                    style: {
-                      background: '#DC2626',
+                    success: {
+                      style: {
+                        background: '#059669',
+                      },
                     },
-                  },
-                }}
-              />
-            </div>
+                    error: {
+                      style: {
+                        background: '#DC2626',
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </ErrorBoundary>
           </AuthProvider>
         </PWAProvider>
       </body>

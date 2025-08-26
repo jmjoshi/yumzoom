@@ -219,8 +219,6 @@ const RestaurantCharacteristics: React.FC<RestaurantCharacteristicsProps> = ({
     );
   }
 
-  const characteristics = restaurant.characteristics;
-
   return (
     <div className="space-y-8">
       {/* Restaurant Characteristics Overview */}
@@ -237,15 +235,15 @@ const RestaurantCharacteristics: React.FC<RestaurantCharacteristicsProps> = ({
           </button>
         </div>
 
-        {characteristics && characteristics.total_ratings_count > 0 ? (
+        {restaurant.characteristics && restaurant.characteristics.total_ratings_count > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {Object.entries(characteristicLabels).map(([key, label]) => {
-              const rating = characteristics[`${key}_rating` as keyof typeof characteristics] as number;
+              const rating = restaurant.characteristics?.[`${key}_rating` as keyof typeof restaurant.characteristics] as number;
               return (
                 <div key={key} className="text-center">
                   <p className="text-sm font-medium text-gray-700 mb-2">{label}</p>
                   <div className="flex items-center justify-center">
-                    <StarRating rating={rating} size="sm" />
+                    <StarRating rating={rating || 0} size="sm" />
                   </div>
                 </div>
               );
@@ -257,10 +255,10 @@ const RestaurantCharacteristics: React.FC<RestaurantCharacteristicsProps> = ({
           </div>
         )}
 
-        {characteristics && characteristics.total_ratings_count > 0 && (
+        {restaurant.characteristics && restaurant.characteristics.total_ratings_count > 0 && (
           <div className="mt-6 pt-6 border-t">
             <p className="text-sm text-gray-600">
-              Based on {characteristics.total_ratings_count} rating{characteristics.total_ratings_count !== 1 ? 's' : ''}
+              Based on {restaurant.characteristics.total_ratings_count} rating{restaurant.characteristics.total_ratings_count !== 1 ? 's' : ''}
             </p>
           </div>
         )}

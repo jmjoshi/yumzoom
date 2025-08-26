@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
+import { supabase } from '@/lib/supabase';
 import type { 
   RestaurantOwner, 
   OwnerDashboardStats, 
@@ -37,24 +38,50 @@ export function useRestaurantOwner(): UseRestaurantOwnerReturn {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   // Fetch owner status
   const refreshOwnerStatus = async () => {
-    if (!user) return;
+    if (!user || retryCount >= MAX_RETRIES) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/restaurant-owners/verify');
+      // Get auth token
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        throw new Error('No active session');
+      }
+
+      const response = await fetch('/api/restaurant-owners/verify', {
+        headers: {
+          'Authorization': `Bearer ${session.data.session.access_token}`
+        }
+      });
+      
       if (!response.ok) {
+        if (response.status === 401) {
+          setError('Authentication required');
+          return;
+        }
+        if (response.status === 404) {
+          // Endpoint not found, likely not implemented yet
+          console.warn('Restaurant owner verification endpoint not available');
+          setOwnerStatus([]);
+          return;
+        }
         throw new Error('Failed to fetch owner status');
       }
 
       const data = await response.json();
       setOwnerStatus(data.restaurants || []);
+      setRetryCount(0); // Reset retry count on success
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+      setRetryCount(prev => prev + 1);
+      console.error('Owner status fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -84,11 +111,34 @@ export function useRestaurantOwner(): UseRestaurantOwnerReturn {
 
   // Fetch notifications
   const refreshNotifications = async () => {
-    if (!user) return;
+    if (!user || retryCount >= MAX_RETRIES) return;
 
     try {
-      const response = await fetch('/api/notifications/responses');
+      // Get auth token
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        setError('No active session');
+        return;
+      }
+
+      const response = await fetch('/api/notifications/responses', {
+        headers: {
+          'Authorization': `Bearer ${session.data.session.access_token}`
+        }
+      });
+      
       if (!response.ok) {
+        if (response.status === 401) {
+          setError('Authentication required');
+          return;
+        }
+        if (response.status === 404) {
+          // Endpoint not found, likely not implemented yet
+          console.warn('Notifications endpoint not available');
+          setNotifications([]);
+          setUnreadCount(0);
+          return;
+        }
         throw new Error('Failed to fetch notifications');
       }
 
@@ -97,6 +147,7 @@ export function useRestaurantOwner(): UseRestaurantOwnerReturn {
       setUnreadCount(data.unread_count || 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Notifications fetch error:', err);
     }
   };
 
@@ -236,17 +287,24 @@ export function useRestaurantOwner(): UseRestaurantOwnerReturn {
     }
   };
 
-  // Load data on mount and user change
+  // Load data on mount and user change with debounce
   useEffect(() => {
-    if (user) {
-      refreshOwnerStatus();
-      refreshNotifications();
-    } else {
+    if (!user) {
       setOwnerStatus([]);
       setDashboardData([]);
       setNotifications([]);
       setUnreadCount(0);
+      setRetryCount(0);
+      return;
     }
+
+    // Debounce to prevent rapid API calls
+    const timer = setTimeout(() => {
+      refreshOwnerStatus();
+      refreshNotifications();
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [user]);
 
   return {
