@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, StarHalf, ThumbsUp, ThumbsDown, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { 
   RestaurantWithCharacteristics, 
   UserRestaurantRatingWithDetails, 
@@ -88,6 +90,7 @@ const RestaurantCharacteristics: React.FC<RestaurantCharacteristicsProps> = ({
   restaurantId,
   onRatingSubmitted
 }) => {
+  const { user } = useAuth();
   const [restaurant, setRestaurant] = useState<RestaurantWithCharacteristics | null>(null);
   const [userRatings, setUserRatings] = useState<UserRestaurantRatingWithDetails[]>([]);
   const [ratingDistribution, setRatingDistribution] = useState<Record<string, Record<string, number>>>({});
@@ -134,26 +137,43 @@ const RestaurantCharacteristics: React.FC<RestaurantCharacteristicsProps> = ({
   };
 
   const handleRatingSubmit = async () => {
+    if (!user) {
+      alert('Please sign in to submit a rating.');
+      return;
+    }
+
     try {
       setSubmitting(true);
+      
+      // Get the current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        alert('Please sign in to submit a rating.');
+        return;
+      }
       
       const response = await fetch(`/api/restaurants/${restaurantId}/characteristics`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer user-${Date.now()}` // Simplified auth for demo
+          'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify(userRating)
+        body: JSON.stringify({
+          ...userRating,
+          user_id: user.id // Ensure user ID is included
+        })
       });
 
       if (response.ok) {
         setShowRatingForm(false);
         await fetchRestaurantCharacteristics();
         onRatingSubmitted?.();
+        alert('Rating submitted successfully!');
       } else {
         const error = await response.json();
         console.error('Error submitting rating:', error);
-        alert('Failed to submit rating. Please try again.');
+        alert(`Failed to submit rating: ${error.error || 'Please try again.'}`);
       }
     } catch (error) {
       console.error('Error submitting rating:', error);

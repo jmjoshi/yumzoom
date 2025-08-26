@@ -138,18 +138,26 @@ export async function POST(
   try {
     const restaurantId = params.id;
     
-    // Check if user is authenticated
+    // Get authentication from header
     const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - No valid token provided' },
         { status: 401 }
       );
     }
 
-    // For now, we'll use a simple auth check
-    // In production, you'd validate the JWT token
-    const userId = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify the token with Supabase
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid token' },
+        { status: 401 }
+      );
+    }
 
     const body = await request.json();
     
@@ -171,7 +179,7 @@ export async function POST(
 
     // Insert or update user restaurant rating
     const ratingData = {
-      user_id: userId,
+      user_id: user.id,
       restaurant_id: restaurantId,
       ambience_rating: body.ambience_rating,
       decor_rating: body.decor_rating,
@@ -197,16 +205,16 @@ export async function POST(
     if (ratingError) {
       console.error('Error saving rating:', ratingError);
       return NextResponse.json(
-        { error: 'Failed to save rating' },
+        { error: 'Failed to save rating: ' + ratingError.message },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ rating });
+    return NextResponse.json({ rating, message: 'Rating submitted successfully' });
   } catch (error) {
     console.error('Error creating restaurant rating:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
     );
   }
