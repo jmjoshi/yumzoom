@@ -8,6 +8,8 @@ import { PWAInstallPrompt } from '@/components/pwa/PWAInstallPrompt';
 import { OfflineIndicator } from '@/components/pwa/OfflineIndicator';
 import { MobileBottomNavigation, MobileFloatingActionButton } from '@/components/pwa/MobileBottomNavigation';
 import { AdvancedMobileFeatures } from '@/components/pwa/AdvancedMobileFeatures';
+import { RoleDebugger } from '@/components/debug/RoleDebugger';
+import { QuickRoleDebug } from '@/components/debug/QuickRoleDebug';
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
 import '@/styles/globals.css';
 
@@ -119,6 +121,8 @@ export default function RootLayout({
               <MobileFloatingActionButton />
               <AdvancedMobileFeatures />
               <PWAInstallPrompt />
+              <RoleDebugger />
+              <QuickRoleDebug />
               <Toaster
                 position="top-right"
                 toastOptions={{
