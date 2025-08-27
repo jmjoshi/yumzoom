@@ -691,8 +691,8 @@ export function useSocial(): UseSocialReturn {
           
           return {
             ...connection,
-            follower_profile: followerProfile.data,
-            following_profile: followingProfile.data
+            follower_profile: followerProfile.data || undefined,
+            following_profile: followingProfile.data || undefined
           };
         })
       );
@@ -716,8 +716,8 @@ export function useSocial(): UseSocialReturn {
           
           return {
             ...connection,
-            follower_profile: followerProfile.data,
-            following_profile: followingProfile.data
+            follower_profile: followerProfile.data || undefined,
+            following_profile: followingProfile.data || undefined
           };
         })
       );
@@ -741,8 +741,8 @@ export function useSocial(): UseSocialReturn {
           
           return {
             ...connection,
-            follower_profile: followerProfile.data,
-            following_profile: followingProfile.data
+            follower_profile: followerProfile.data || undefined,
+            following_profile: followingProfile.data || undefined
           };
         })
       );
@@ -800,8 +800,8 @@ export function useSocial(): UseSocialReturn {
           
           return {
             ...rec,
-            recommender_profile: recommenderProfile.data,
-            restaurant: restaurant.data
+            recommender_profile: recommenderProfile.data || undefined,
+            restaurant: restaurant.data || undefined
           };
         })
       );
@@ -822,7 +822,7 @@ export function useSocial(): UseSocialReturn {
           
           return {
             ...rec,
-            restaurant: restaurant.data
+            restaurant: restaurant.data || undefined
           };
         })
       );

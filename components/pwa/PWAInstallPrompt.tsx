@@ -141,8 +141,15 @@ export function PWAInstallPrompt() {
 export function PWAInstallButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+    
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
     setIsInstalled(isInstalled);
 
@@ -163,7 +170,7 @@ export function PWAInstallButton() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [isClient]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -176,14 +183,35 @@ export function PWAInstallButton() {
     }
   };
 
-  if (isInstalled || !deferredPrompt) {
+  // Don't render on server side
+  if (!isClient) {
     return null;
+  }
+
+  // Show different content based on state
+  if (isInstalled) {
+    return (
+      <div className="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg text-sm font-medium">
+        <Smartphone className="w-4 h-4" />
+        <span>App Installed ✓</span>
+      </div>
+    );
+  }
+
+  if (!deferredPrompt) {
+    return (
+      <div className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-400 text-white rounded-lg text-sm font-medium cursor-not-allowed">
+        <Download className="w-4 h-4" />
+        <span>Install App</span>
+        <span className="text-xs opacity-75">(Browser not supported)</span>
+      </div>
+    );
   }
 
   return (
     <button
       onClick={handleInstallClick}
-      className="inline-flex items-center space-x-2 px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm font-medium"
+      className="inline-flex items-center space-x-2 px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-200"
     >
       <Download className="w-4 h-4" />
       <span>Install App</span>

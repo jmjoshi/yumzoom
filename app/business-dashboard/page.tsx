@@ -25,12 +25,12 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { SubscriptionPlan, RestaurantSubscription, BusinessDashboardStats } from '@/types/business-platform';
+import { useSearchParams } from 'next/navigation';
 
-interface BusinessDashboardProps {
-  restaurantId: string;
-}
-
-export default function BusinessDashboard({ restaurantId }: BusinessDashboardProps) {
+export default function BusinessDashboard() {
+  const searchParams = useSearchParams();
+  const restaurantId = searchParams.get('restaurantId') || '';
+  
   return (
     <BusinessPartnerOnly
       fallback={
@@ -51,6 +51,10 @@ export default function BusinessDashboard({ restaurantId }: BusinessDashboardPro
       <BusinessDashboardContent restaurantId={restaurantId} />
     </BusinessPartnerOnly>
   );
+}
+
+interface BusinessDashboardProps {
+  restaurantId: string;
 }
 
 function BusinessDashboardContent({ restaurantId }: BusinessDashboardProps) {

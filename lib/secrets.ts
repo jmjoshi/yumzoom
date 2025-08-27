@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { securityMonitor } from './monitoring';
 
 interface KeyMetadata {
@@ -13,8 +13,8 @@ interface KeyMetadata {
 class SecretsManager {
   private static instance: SecretsManager;
   private supabaseUrl: string;
-  private supabaseClient: any = null; // Cache the client
-  private supabaseAdminClient: any = null; // Cache the admin client
+  private supabaseClient: SupabaseClient | null = null; // Cache the client
+  private supabaseAdminClient: SupabaseClient | null = null; // Cache the admin client
   private keyMetadata: Map<string, KeyMetadata> = new Map();
   private readonly VALIDATION_INTERVAL = 5 * 60 * 1000; // 5 minutes
   private readonly KEY_ROTATION_INTERVAL = 30 * 24 * 60 * 60 * 1000; // 30 days

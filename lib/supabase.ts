@@ -1,3 +1,4 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { secretsManager } from './secrets';
 import { keyRotationService } from './key-rotation';
 
@@ -7,23 +8,23 @@ if (typeof window === 'undefined') {
 }
 
 // Create singleton instances to prevent multiple client warnings
-let clientInstance: any = null;
-let adminInstance: any = null;
+let clientInstance: SupabaseClient | null = null;
+let adminInstance: SupabaseClient | null = null;
 
 // Client-side Supabase instance with singleton pattern
-export const getSupabaseClient = () => {
+export const getSupabaseClient = (): SupabaseClient => {
   if (!clientInstance) {
     clientInstance = secretsManager.getSupabaseClient('anon');
   }
-  return clientInstance;
+  return clientInstance!;
 };
 
 // Server-side client with service role key with singleton pattern
-export const getSupabaseAdmin = () => {
+export const getSupabaseAdmin = (): SupabaseClient => {
   if (!adminInstance) {
     adminInstance = secretsManager.getSupabaseClient('service');
   }
-  return adminInstance;
+  return adminInstance!;
 };
 
 // Export the singletons

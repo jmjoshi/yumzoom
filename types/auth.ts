@@ -1,3 +1,5 @@
+import { User } from '@supabase/supabase-js';
+
 export interface SignUpData {
   email: string;
   password: string;
@@ -14,13 +16,13 @@ export interface SignInData {
 }
 
 export interface AuthState {
-  user: any | null;
+  user: User | null;
   loading: boolean;
   error: string | null;
 }
 
 export interface AuthContextType {
-  user: any | null;
+  user: User | null;
   loading: boolean;
   error: string | null;
   signIn: (data: SignInData) => Promise<void>;

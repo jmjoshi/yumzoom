@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Star, Users, TrendingUp, Shield } from 'lucide-react';
+import { PWAInstallButton } from '@/components/pwa/PWAInstallPrompt';
 import { APP_NAME, ROUTES } from '@/lib/constants';
 
 export default function HomePage() {
@@ -51,6 +52,9 @@ export default function HomePage() {
                   Browse Restaurants
                 </Button>
               </Link>
+              <div className="w-full sm:w-auto">
+                <PWAInstallButton />
+              </div>
             </div>
           </div>
         </div>
@@ -84,6 +88,27 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Mobile App Section */}
+      <section className="py-16 bg-gradient-to-r from-amber-50 to-orange-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Get the Mobile App Experience
+            </h2>
+            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+              Install YumZoom as a mobile app for the best experience. Enjoy offline access, 
+              push notifications, and a native app feel on your device.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <PWAInstallButton />
+              <p className="text-sm text-gray-500">
+                Available for iOS, Android, and Desktop
+              </p>
+            </div>
           </div>
         </div>
       </section>

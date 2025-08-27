@@ -123,7 +123,7 @@ export async function GET(
     };
 
     // Calculate helpfulness for each rating (simplified without user profiles for now)
-    const ratingsWithHelpfulness = userRatings?.map((rating: any) => {
+    const ratingsWithHelpfulness = userRatings?.map((rating: Record<string, any>) => {
       return {
         ...rating,
         helpful_count: 0, // TODO: Implement helpfulness voting
@@ -133,7 +133,7 @@ export async function GET(
     }) || [];
 
     // Calculate rating distribution for characteristics
-    const ratingDistribution = userRatings?.reduce((acc: Record<string, Record<string, number>>, rating: any) => {
+    const ratingDistribution = userRatings?.reduce((acc: Record<string, Record<string, number>>, rating: Record<string, any>) => {
       const characteristics = [
         'ambience', 'decor', 'service', 'cleanliness', 
         'noise_level', 'value_for_money', 'food_quality', 'overall'

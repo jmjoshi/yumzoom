@@ -120,7 +120,7 @@ export function PopularRestaurantsChart({ data }: PopularRestaurantsChartProps) 
               </div>
               <div className="text-center">
                 <p className="text-sm font-semibold text-gray-900">{restaurant.average_rating.toFixed(1)}</p>
-                <StarRating value={restaurant.average_rating} size="xs" />
+                <StarRating value={restaurant.average_rating} size="sm" />
               </div>
             </div>
           </div>

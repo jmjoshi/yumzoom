@@ -52,7 +52,7 @@ export function RestaurantCard({
         .eq('menu_items.restaurant_id', restaurant.id);
 
       if (ratings && ratings.length > 0) {
-        const totalRating = ratings.reduce((sum: number, r: Rating) => sum + r.rating, 0);
+        const totalRating = ratings.reduce((sum: number, r: any) => sum + (r.rating || 0), 0);
         const avgRating = totalRating / ratings.length;
         setCalculatedRating(avgRating);
         setRatingCount(ratings.length);
@@ -66,7 +66,7 @@ export function RestaurantCard({
         .not('price', 'is', null);
 
       if (menuItems && menuItems.length > 0) {
-        const totalPrice = menuItems.reduce((sum: number, item: MenuItem) => sum + (item.price || 0), 0);
+        const totalPrice = menuItems.reduce((sum: number, item: any) => sum + (Number(item.price) || 0), 0);
         const avgPrice = totalPrice / menuItems.length;
         setAveragePrice(avgPrice);
       }
