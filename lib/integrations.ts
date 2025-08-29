@@ -1,4 +1,5 @@
 import { Restaurant } from '@/types/restaurant';
+import { generateSecureUrl } from './https-config';
 
 // Calendar Integration Types
 export interface CalendarEvent {
@@ -207,7 +208,7 @@ export const generateCalendarEvent = (
     start: date,
     end: endDate,
     location: restaurant.address || 'Restaurant location',
-    url: `${process.env.NEXT_PUBLIC_APP_URL}/restaurants/${restaurant.id}`,
+    url: generateSecureUrl(`/restaurants/${restaurant.id}`),
   };
 };
 
@@ -216,8 +217,8 @@ export const generateShareContent = (
   rating?: number,
   review?: string
 ): ShareContent => {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yumzoom.com';
-  const restaurantUrl = `${baseUrl}/restaurants/${restaurant.id}`;
+  const baseUrl = generateSecureUrl('');
+  const restaurantUrl = generateSecureUrl(`/restaurants/${restaurant.id}`);
   
   let title = `Check out ${restaurant.name} on YumZoom!`;
   let description = `${restaurant.name} - ${restaurant.cuisine_type || 'Great'} cuisine`;

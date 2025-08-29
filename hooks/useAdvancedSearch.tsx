@@ -287,20 +287,75 @@ export function useAdvancedSearch(): UseAdvancedSearchResult {
 
       // Search menu items if needed
       if (filters.searchType === 'menu_items' || filters.searchType === 'both') {
-        const menuQuery = searchMenuItems(filters);
+        let menuQuery = supabase.from('menu_items').select(`
+          id,
+          restaurant_id,
+          name,
+          description,
+          price,
+          category,
+          image_url,
+          dietary_restrictions,
+          is_vegetarian,
+          is_vegan,
+          is_gluten_free,
+          allergens,
+          created_at,
+          updated_at,
+          restaurants!inner (
+            id,
+            name,
+            cuisine_type,
+            city,
+            state,
+            latitude,
+            longitude,
+            image_url
+          )
+        `);
+
+        // Apply filters for menu items
+        if (filters.searchQuery.trim()) {
+          const searchTerm = filters.searchQuery.trim();
+          menuQuery = menuQuery.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        }
+
+        if (filters.menuCategory) {
+          menuQuery = menuQuery.eq('category', filters.menuCategory);
+        }
+
+        if (filters.menuPriceMin !== undefined) {
+          menuQuery = menuQuery.gte('price', filters.menuPriceMin);
+        }
+        if (filters.menuPriceMax !== undefined) {
+          menuQuery = menuQuery.lte('price', filters.menuPriceMax);
+        }
+
+        if (filters.isVegetarian) {
+          menuQuery = menuQuery.eq('is_vegetarian', true);
+        }
+        if (filters.isVegan) {
+          menuQuery = menuQuery.eq('is_vegan', true);
+        }
+        if (filters.isGlutenfree) {
+          menuQuery = menuQuery.eq('is_gluten_free', true);
+        }
+        if (filters.dietaryRestrictions && filters.dietaryRestrictions.length > 0) {
+          menuQuery = menuQuery.contains('dietary_restrictions', filters.dietaryRestrictions);
+        }
         
         // Apply sorting for menu items
         if (filters.sortBy === 'price') {
-          menuQuery.order('price', { ascending: filters.sortOrder === 'asc' });
+          menuQuery = menuQuery.order('price', { ascending: filters.sortOrder === 'asc' });
         } else if (filters.sortBy === 'name') {
-          menuQuery.order('name', { ascending: filters.sortOrder === 'asc' });
+          menuQuery = menuQuery.order('name', { ascending: filters.sortOrder === 'asc' });
         } else {
-          menuQuery.order('created_at', { ascending: filters.sortOrder === 'asc' });
+          menuQuery = menuQuery.order('created_at', { ascending: filters.sortOrder === 'asc' });
         }
 
         // Apply pagination for menu items
         const offset = (filters.page - 1) * filters.limit;
-        menuQuery.range(offset, offset + filters.limit - 1);
+        menuQuery = menuQuery.range(offset, offset + filters.limit - 1);
 
         const { data: menuData, error: menuError } = await menuQuery;
 

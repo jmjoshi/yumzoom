@@ -136,10 +136,20 @@ export function useBusinessPlatform() {
     setError(null);
     
     try {
-      const searchParams = new URLSearchParams({
+      const searchParamsObj: Record<string, string> = {
         restaurant_id: restaurantId,
-        ...params
-      });
+      };
+
+      // Convert all params to strings
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined) {
+            searchParamsObj[key] = String(value);
+          }
+        });
+      }
+
+      const searchParams = new URLSearchParams(searchParamsObj);
       
       const response = await fetch(`/api/business-platform/advertising?${searchParams}`);
       const data = await handleApiResponse<AdCampaign[]>(response);
@@ -191,7 +201,18 @@ export function useBusinessPlatform() {
     setError(null);
     
     try {
-      const searchParams = new URLSearchParams(params || {});
+      const searchParamsObj: Record<string, string> = {};
+
+      // Convert all params to strings
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined) {
+            searchParamsObj[key] = String(value);
+          }
+        });
+      }
+
+      const searchParams = new URLSearchParams(searchParamsObj);
       
       const response = await fetch(`/api/business-platform/developer-api?${searchParams}`);
       const data = await handleApiResponse<ApiApplication[]>(response);

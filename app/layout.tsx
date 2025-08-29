@@ -9,14 +9,19 @@ import { OfflineIndicator } from '@/components/pwa/OfflineIndicator';
 import { MobileBottomNavigation, MobileFloatingActionButton } from '@/components/pwa/MobileBottomNavigation';
 import { AdvancedMobileFeatures } from '@/components/pwa/AdvancedMobileFeatures';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { GlobalErrorHandler } from '@/lib/global-error-handler';
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
+import { getSecureBaseUrl } from '@/lib/https-config';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
+import { locales, rtlLocales } from '../i18n';
 import '@/styles/globals.css';
 import '@/lib/console-filter'; // Import console filter for development
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  metadataBase: new URL(getSecureBaseUrl()),
   title: {
     default: APP_NAME,
     template: `%s | ${APP_NAME}`,
@@ -86,13 +91,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+  const isRTL = rtlLocales.includes(locale as any);
+
   return (
-    <html lang="en">
+    <html lang={locale} dir={isRTL ? 'rtl' : 'ltr'}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
         <meta name="theme-color" content="#f59e0b" />
@@ -106,41 +115,66 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={inter.className}>
-        <PWAProvider>
-          <AuthProvider>
-            <ErrorBoundary>
-              <div className="min-h-screen bg-gray-50">
-                <OfflineIndicator />
-                <Navbar />
-                <main className="pb-20 md:pb-0">{children}</main>
-                <MobileBottomNavigation />
-                <MobileFloatingActionButton />
-                <AdvancedMobileFeatures />
-                <PWAInstallPrompt />
-                <Toaster
-                  position="top-right"
-                  toastOptions={{
-                    duration: 4000,
-                    style: {
-                      background: '#363636',
-                      color: '#fff',
-                    },
-                    success: {
+        {/* Skip Links for Accessibility */}
+        <div className="skip-links">
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded z-50"
+          >
+            Skip to main content
+          </a>
+          <a
+            href="#navigation"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-32 bg-primary-600 text-white px-4 py-2 rounded z-50"
+          >
+            Skip to navigation
+          </a>
+          <a
+            href="#search"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-64 bg-primary-600 text-white px-4 py-2 rounded z-50"
+          >
+            Skip to search
+          </a>
+        </div>
+
+        <NextIntlClientProvider messages={messages}>
+          <PWAProvider>
+            <AuthProvider>
+              <ErrorBoundary>
+                <GlobalErrorHandler />
+                <div className="min-h-screen bg-gray-50">
+                  <OfflineIndicator />
+                  <Navbar />
+                  <main id="main-content" className="pb-20 md:pb-0">{children}</main>
+                  <MobileBottomNavigation />
+                  <MobileFloatingActionButton />
+                  <AdvancedMobileFeatures />
+                  <PWAInstallPrompt />
+                  <Toaster
+                    position="top-right"
+                    toastOptions={{
+                      duration: 4000,
                       style: {
-                        background: '#059669',
+                        background: '#363636',
+                        color: '#fff',
                       },
-                    },
-                    error: {
-                      style: {
-                        background: '#DC2626',
+                      success: {
+                        style: {
+                          background: '#059669',
+                        },
                       },
-                    },
-                  }}
-                />
-              </div>
-            </ErrorBoundary>
-          </AuthProvider>
-        </PWAProvider>
+                      error: {
+                        style: {
+                          background: '#DC2626',
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </ErrorBoundary>
+            </AuthProvider>
+          </PWAProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

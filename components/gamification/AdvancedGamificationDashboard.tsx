@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Progress } from '@/components/ui/Progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useAdvancedGamification } from '@/hooks/useAdvancedGamification';
+import AchievementNotifications from './AchievementNotifications';
+import RewardRedemptionSystem from './RewardRedemptionSystem';
 import {
   Trophy,
   Target,
@@ -24,7 +26,8 @@ import {
   Clock,
   CheckCircle,
   Lock,
-  Unlock
+  Unlock,
+  Bell
 } from 'lucide-react';
 
 export default function AdvancedGamificationDashboard() {
@@ -115,7 +118,7 @@ export default function AdvancedGamificationDashboard() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Star className="h-4 w-4" />
             Overview
@@ -135,6 +138,10 @@ export default function AdvancedGamificationDashboard() {
           <TabsTrigger value="streaks" className="flex items-center gap-2">
             <Flame className="h-4 w-4" />
             Streaks
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            Notifications
           </TabsTrigger>
           <TabsTrigger value="rewards" className="flex items-center gap-2">
             <Gift className="h-4 w-4" />
@@ -566,82 +573,14 @@ export default function AdvancedGamificationDashboard() {
           </div>
         </TabsContent>
 
+        {/* Notifications Tab */}
+        <TabsContent value="notifications" className="space-y-6">
+          <AchievementNotifications />
+        </TabsContent>
+
         {/* Rewards Tab */}
         <TabsContent value="rewards" className="space-y-6">
-          <h2 className="text-2xl font-bold text-gray-900">Rewards & Achievements</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Unclaimed Rewards */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Gift className="h-5 w-5" />
-                  <span>Unclaimed Rewards</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {rewards.filter(r => !r.is_claimed).length > 0 ? (
-                  <div className="space-y-3">
-                    {rewards
-                      .filter(r => !r.is_claimed)
-                      .slice(0, 5)
-                      .map((reward) => (
-                        <div key={reward.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <div className="font-medium">{reward.title}</div>
-                            <div className="text-sm text-gray-500">{reward.description}</div>
-                            <Badge variant="outline" className="mt-1">
-                              {reward.reward_type}
-                            </Badge>
-                          </div>
-                          <Button 
-                            size="sm"
-                            onClick={() => claimReward(reward.id)}
-                          >
-                            Claim
-                          </Button>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-8">No unclaimed rewards</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Recent Rewards */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Award className="h-5 w-5" />
-                  <span>Recent Rewards</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {rewards.filter(r => r.is_claimed).length > 0 ? (
-                  <div className="space-y-3">
-                    {rewards
-                      .filter(r => r.is_claimed)
-                      .slice(0, 5)
-                      .map((reward) => (
-                        <div key={reward.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <div className="font-medium">{reward.title}</div>
-                            <div className="text-sm text-gray-500">{reward.description}</div>
-                            <div className="text-xs text-gray-400 mt-1">
-                              Claimed {new Date(reward.claimed_at!).toLocaleDateString()}
-                            </div>
-                          </div>
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-8">No rewards claimed yet</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <RewardRedemptionSystem />
         </TabsContent>
       </Tabs>
     </div>

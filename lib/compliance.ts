@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { generateSecureUrl } from './https-config';
 import { securityMonitor } from './monitoring';
 import { notificationService } from './notifications';
 
@@ -474,7 +475,7 @@ class ComplianceService {
   private async generateSecureDownloadUrl(data: string, requestId: string): Promise<string> {
     // In a real implementation, you'd upload to secure cloud storage
     // and generate a signed URL. For now, we'll return a placeholder
-    return `${process.env.NEXT_PUBLIC_APP_URL}/api/data-export/${requestId}/download`;
+    return generateSecureUrl(`/api/data-export/${requestId}/download`);
   }
 
   /**
@@ -513,7 +514,7 @@ class ComplianceService {
           
           <p>Please review this request and take appropriate action within the required timeframe.</p>
           
-          <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/compliance">Review in Admin Panel</a></p>
+          <p><a href="${generateSecureUrl('/admin/compliance')}">Review in Admin Panel</a></p>
         `,
         priority: 'high',
       });

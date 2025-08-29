@@ -1,6 +1,6 @@
 // Temporarily disable next-intl
-// const createNextIntlPlugin = require('next-intl/plugin');
-// const withNextIntl = createNextIntlPlugin();
+const createNextIntlPlugin = require('next-intl/plugin');
+const withNextIntl = createNextIntlPlugin();
 
 const withPWA = require('next-pwa')({
   dest: 'public',
@@ -63,6 +63,97 @@ const nextConfig = {
     // Temporarily ignore these rules during builds
     ignoreDuringBuilds: true,
   },
+  
+  // Force HTTPS in production
+  async redirects() {
+    if (process.env.NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true') {
+      return [
+        {
+          source: '/(.*)',
+          has: [
+            {
+              type: 'header',
+              key: 'x-forwarded-proto',
+              value: 'http',
+            },
+          ],
+          destination: 'https://yumzoom.com/:path*',
+          permanent: true,
+        },
+      ];
+    }
+    return [];
+  },
+
+  // Enhanced security headers
+  async headers() {
+    const securityHeaders = [
+      {
+        key: 'X-DNS-Prefetch-Control',
+        value: 'on'
+      },
+      {
+        key: 'X-XSS-Protection',
+        value: '1; mode=block'
+      },
+      {
+        key: 'X-Frame-Options',
+        value: 'DENY'
+      },
+      {
+        key: 'X-Content-Type-Options',
+        value: 'nosniff'
+      },
+      {
+        key: 'Referrer-Policy',
+        value: 'strict-origin-when-cross-origin'
+      },
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=()'
+      }
+    ];
+
+    // Add HSTS header in production
+    if (process.env.NODE_ENV === 'production') {
+      securityHeaders.push({
+        key: 'Strict-Transport-Security',
+        value: 'max-age=63072000; includeSubDomains; preload'
+      });
+    }
+
+    // Content Security Policy with HTTPS enforcement
+    if (process.env.NODE_ENV === 'production') {
+      securityHeaders.push({
+        key: 'Content-Security-Policy',
+        value: [
+          "default-src 'self' https:",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+          "style-src 'self' 'unsafe-inline' https:",
+          "img-src 'self' data: https:",
+          "font-src 'self' https:",
+          "connect-src 'self' https:",
+          "media-src 'self' https:",
+          "object-src 'none'",
+          "child-src 'self' https:",
+          "worker-src 'self'",
+          "manifest-src 'self'",
+          "base-uri 'self'",
+          "form-action 'self' https:",
+          "frame-ancestors 'none'",
+          "upgrade-insecure-requests"
+        ].join('; ')
+      });
+    }
+
+    return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
+    ];
+  },
+
   images: {
     remotePatterns: [
       {
@@ -74,6 +165,12 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.yumzoom.com',
         port: '',
         pathname: '/**',
       },
@@ -101,4 +198,4 @@ const nextConfig = {
   },
 }
 
-module.exports = withPWA(nextConfig)
+module.exports = withNextIntl(withPWA(nextConfig))

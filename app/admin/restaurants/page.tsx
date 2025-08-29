@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Restaurant } from '@/types/restaurant';
 import { CUISINE_TYPES } from '@/lib/constants';
-import { Plus, Edit, Trash2, Building, MapPin, Phone, Globe, UtensilsCrossed } from 'lucide-react';
+import { Plus, Edit, Trash2, Building, MapPin, Phone, Globe, UtensilsCrossed, History } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
@@ -430,6 +430,15 @@ function AdminRestaurantsContent() {
                   >
                     <UtensilsCrossed className="h-4 w-4 mr-1" />
                     Menu Items
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.href = `/admin/versioning?contentType=restaurant&contentId=${restaurant.id}`}
+                    className="flex-1"
+                  >
+                    <History className="h-4 w-4 mr-1" />
+                    Version History
                   </Button>
                   <Button
                     variant="outline"

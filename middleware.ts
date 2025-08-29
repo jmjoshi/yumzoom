@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { securityMonitor } from './lib/monitoring';
 import createIntlMiddleware from 'next-intl/middleware';
 import { locales, defaultLocale } from './i18n';
+import { getSecurityHeaders, createHttpsRedirect } from './lib/https-config';
 
 // Create internationalization middleware
 const intlMiddleware = createIntlMiddleware({
@@ -79,8 +80,13 @@ function getRateLimit(req: NextRequest): boolean {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   
+  // HTTPS enforcement - redirect HTTP to HTTPS in production
+  const httpsRedirect = createHttpsRedirect(req);
+  if (httpsRedirect) {
+    return httpsRedirect;
+  }
+  
   // Temporarily disable internationalization
-  /*
   // Skip internationalization for API routes, static files, and internal Next.js routes
   const shouldSkipIntl = 
     pathname.startsWith('/api') ||
@@ -98,7 +104,6 @@ export async function middleware(req: NextRequest) {
       return intlResponse;
     }
   }
-  */
 
   const ip = req.ip || 'unknown';
   
@@ -124,20 +129,28 @@ export async function middleware(req: NextRequest) {
     });
   }
   
-  // Add security headers
+  // Apply comprehensive security headers including HTTPS enforcement
   const response = NextResponse.next();
+  const securityHeaders = getSecurityHeaders();
+  
+  // Set security headers explicitly for validation
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   
-  // Only set HSTS in production
+  // Set HSTS header in production
   if (process.env.NODE_ENV === 'production') {
-    response.headers.set(
-      'Strict-Transport-Security',
-      'max-age=31536000; includeSubDomains'
-    );
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
+  
+  // Apply additional security headers from the configuration
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    if (!response.headers.has(key)) {
+      response.headers.set(key, value);
+    }
+  });
   
   return response;
 }

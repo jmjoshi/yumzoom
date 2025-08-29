@@ -4,6 +4,8 @@ if (typeof window === 'undefined') {
   nodemailer = require('nodemailer');
 }
 
+import { generateSecureUrl } from './https-config';
+
 export interface EmailOptions {
   to: string;
   subject: string;
@@ -174,7 +176,7 @@ class NotificationService {
         <li>Connect with other families</li>
       </ul>
       <p>Get started by exploring restaurants in your area!</p>
-      <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/restaurants">Browse Restaurants</a></p>
+      <p><a href="${generateSecureUrl('/restaurants')}">Browse Restaurants</a></p>
     `;
 
     await this.sendEmail({

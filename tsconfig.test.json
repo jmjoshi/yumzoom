@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["jest", "@testing-library/jest-dom", "node"]
+  },
+  "include": [
+    "**/__tests__/**/*",
+    "jest.setup.js",
+    "jest.config.js",
+    "types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "components/restaurant/LocationPicker.tsx",
+    "components/restaurant/MenuItemSearch.tsx",
+    "hooks/useAdvancedSearch.tsx",
+    "hooks/useBusinessPlatform.tsx",
+    "hooks/useFamilyAnalytics.tsx"
+  ]
+}

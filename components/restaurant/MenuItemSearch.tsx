@@ -519,11 +519,11 @@ export function MenuItemSearch({ onMenuItemSelect, className }: MenuItemSearchPr
                         </div>
                       )}
                       
-                      {item.average_rating > 0 && (
+                      {(item.average_rating ?? 0) > 0 && (
                         <div className="flex items-center gap-1 text-xs text-gray-500">
                           <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          {item.average_rating.toFixed(1)}
-                          {item.rating_count > 0 && (
+                          {(item.average_rating ?? 0).toFixed(1)}
+                          {(item.rating_count ?? 0) > 0 && (
                             <span>({item.rating_count})</span>
                           )}
                         </div>

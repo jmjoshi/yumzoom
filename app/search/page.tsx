@@ -139,6 +139,7 @@ export default function AdvancedSearchPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search Filters - Choose between standard and enhanced */}
+        <section id="search">
         {useEnhancedFilters ? (
           <EnhancedSearchFilters
             onSearch={handleSearch}
@@ -158,6 +159,7 @@ export default function AdvancedSearchPage() {
             className="mb-8"
           />
         )}
+        </section>
 
         {/* Quick Help / Popular Searches (show when no search has been performed) */}
         {searchState.results.length === 0 && !searchState.loading && !searchState.filters.searchQuery && (

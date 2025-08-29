@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Restaurant, MenuItem } from '@/types/restaurant';
 import { MENU_CATEGORIES } from '@/lib/constants';
-import { Plus, Edit, Trash2, ArrowLeft, UtensilsCrossed, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2, ArrowLeft, UtensilsCrossed, DollarSign, History } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -410,6 +410,15 @@ export default function AdminMenuItemsPage() {
                       )}
 
                       <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.location.href = `/admin/versioning?contentType=menu_item&contentId=${menuItem.id}`}
+                          className="flex-1"
+                        >
+                          <History className="h-4 w-4 mr-1" />
+                          Version History
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"

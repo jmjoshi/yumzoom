@@ -102,17 +102,21 @@ export function useFamilyAnalytics(timeRange: TimeRange): UseFamilyAnalyticsRetu
         : 0;
 
       // Get unique restaurants
-      const uniqueRestaurants = new Set(ratings.map(r => r.menu_items?.restaurants?.id));
+      const uniqueRestaurants = new Set(
+        ratings
+          .map(r => r.menu_items?.[0]?.restaurants?.[0]?.id)
+          .filter(Boolean)
+      );
       const totalRestaurants = uniqueRestaurants.size;
 
       // Estimate spending based on menu item prices
       const estimatedSpending = ratings.reduce((sum, r) => {
-        const price = r.menu_items?.price || 0;
+        const price = r.menu_items?.[0]?.price || 0;
         return sum + Number(price);
       }, 0);
 
       // Count active members (those who have ratings)
-      const activeMembers = new Set(ratings.map(r => r.family_members?.id).filter(Boolean));
+  const activeMembers = new Set(ratings.map(r => r.family_members?.[0]?.id).filter(Boolean));
 
       const insights: FamilyInsights = {
         total_restaurants: totalRestaurants,
@@ -168,7 +172,7 @@ export function useFamilyAnalytics(timeRange: TimeRange): UseFamilyAnalyticsRetu
       }>();
 
       (ratingsData || []).forEach(rating => {
-        const restaurant = rating.menu_items?.restaurants;
+        const restaurant = rating.menu_items?.[0]?.restaurants?.[0];
         if (!restaurant) return;
 
         if (!restaurantMap.has(restaurant.id)) {
@@ -233,7 +237,7 @@ export function useFamilyAnalytics(timeRange: TimeRange): UseFamilyAnalyticsRetu
       const cuisineMap = new Map<string, number[]>();
 
       (ratingsData || []).forEach(rating => {
-        const cuisineType = rating.menu_items?.restaurants?.cuisine_type || 'Other';
+        const cuisineType = rating.menu_items?.[0]?.restaurants?.[0]?.cuisine_type || 'Other';
         if (!cuisineMap.has(cuisineType)) {
           cuisineMap.set(cuisineType, []);
         }
@@ -305,8 +309,8 @@ export function useFamilyAnalytics(timeRange: TimeRange): UseFamilyAnalyticsRetu
         const cuisineCounts = new Map<string, number>();
 
         ratings.forEach(rating => {
-          const restaurant = rating.menu_items?.restaurants?.name;
-          const cuisine = rating.menu_items?.restaurants?.cuisine_type;
+          const restaurant = rating.menu_items?.[0]?.restaurants?.[0]?.name;
+          const cuisine = rating.menu_items?.[0]?.restaurants?.[0]?.cuisine_type;
 
           if (restaurant) {
             restaurantCounts.set(restaurant, (restaurantCounts.get(restaurant) || 0) + 1);

@@ -6,26 +6,48 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { MapPin, Navigation, Loader2 } from 'lucide-react';
 
+// Define types for map components to avoid TypeScript errors
+interface MapContainerProps {
+  children: React.ReactNode;
+  center: [number, number];
+  zoom: number;
+  style: React.CSSProperties;
+}
+
+interface TileLayerProps {
+  attribution: string;
+  url: string;
+}
+
+interface MarkerProps {
+  children: React.ReactNode;
+  position: [number, number];
+}
+
+interface PopupProps {
+  children: React.ReactNode;
+}
+
 // Dynamically import map to avoid SSR issues
 const MapContainer = dynamic(
   () => import('react-leaflet').then((mod) => mod.MapContainer),
   { ssr: false, loading: () => <div className="h-64 bg-gray-200 animate-pulse rounded-lg" /> }
-);
+) as React.ComponentType<MapContainerProps>;
 
 const TileLayer = dynamic(
   () => import('react-leaflet').then((mod) => mod.TileLayer),
   { ssr: false }
-);
+) as React.ComponentType<TileLayerProps>;
 
 const Marker = dynamic(
   () => import('react-leaflet').then((mod) => mod.Marker),
   { ssr: false }
-);
+) as React.ComponentType<MarkerProps>;
 
 const Popup = dynamic(
   () => import('react-leaflet').then((mod) => mod.Popup),
   { ssr: false }
-);
+) as React.ComponentType<PopupProps>;
 
 interface LocationPickerProps {
   onLocationSelect: (location: { latitude: number; longitude: number; address?: string }) => void;
