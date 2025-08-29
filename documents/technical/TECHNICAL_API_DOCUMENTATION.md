@@ -14,9 +14,10 @@
 7. [Restaurant Owner API](#restaurant-owner-api)
 8. [Social Features API](#social-features-api)
 9. [Security API](#security-api)
-10. [Integration APIs](#integration-apis)
-11. [Error Handling](#error-handling)
-12. [Rate Limiting](#rate-limiting)
+10. [Feature Flags API](#feature-flags-api)
+11. [Integration APIs](#integration-apis)
+12. [Error Handling](#error-handling)
+13. [Rate Limiting](#rate-limiting)
 
 ---
 
@@ -736,6 +737,374 @@ POST /api/privacy/export
 ```typescript
 {
   requestType: 'general' | 'ratings' | 'photos' | 'analytics';
+}
+```
+
+---
+
+## Feature Flags API
+
+### Feature Flag Management
+
+#### Get All Feature Flags
+```http
+GET /api/feature-flags
+```
+
+**Authentication:** Admin required
+
+**Query Parameters:**
+```typescript
+{
+  category?: string;        // Filter by category
+  enabled?: boolean;        // Filter by enabled status
+  page?: number;            // Page number (default: 1)
+  limit?: number;           // Results per page (default: 20)
+}
+```
+
+**Response:**
+```typescript
+interface FeatureFlagsResponse {
+  success: true;
+  data: {
+    featureFlags: FeatureFlag[];
+    total: number;
+    page: number;
+    limit: number;
+    hasMore: boolean;
+  };
+}
+```
+
+#### Get Feature Flag by Name
+```http
+GET /api/feature-flags/[name]
+```
+
+**Authentication:** Admin required
+
+**Response:**
+```typescript
+interface FeatureFlagResponse {
+  success: true;
+  data: {
+    featureFlag: FeatureFlag;
+    usage: {
+      totalUsers: number;
+      activeUsers: number;
+      usageStats: {
+        viewed: number;
+        used: number;
+        interacted: number;
+      };
+    };
+  };
+}
+```
+
+#### Create Feature Flag
+```http
+POST /api/feature-flags
+```
+
+**Authentication:** Admin required
+
+**Request Body:**
+```typescript
+{
+  name: string;                    // Unique identifier
+  displayName: string;             // Human-readable name
+  description?: string;            // Detailed description
+  category: string;                // Category for organization
+  isEnabled: boolean;              // Whether feature is enabled
+  rolloutPercentage: number;       // 0-100 percentage rollout
+  targetAudience?: object;         // JSON target audience criteria
+  dependencies?: string[];         // Array of dependent feature names
+}
+```
+
+#### Update Feature Flag
+```http
+PUT /api/feature-flags/[name]
+```
+
+**Authentication:** Admin required
+
+**Request Body:**
+```typescript
+{
+  displayName?: string;
+  description?: string;
+  category?: string;
+  isEnabled?: boolean;
+  rolloutPercentage?: number;
+  targetAudience?: object;
+  dependencies?: string[];
+}
+```
+
+#### Delete Feature Flag
+```http
+DELETE /api/feature-flags/[name]
+```
+
+**Authentication:** Admin required
+
+### Feature Flag Overrides
+
+#### Get User Overrides
+```http
+GET /api/feature-flags/overrides
+```
+
+**Query Parameters:**
+```typescript
+{
+  userId?: string;         // Filter by user ID
+  featureName?: string;    // Filter by feature name
+  page?: number;
+  limit?: number;
+}
+```
+
+**Response:**
+```typescript
+interface FeatureFlagOverridesResponse {
+  success: true;
+  data: {
+    overrides: FeatureFlagOverride[];
+    total: number;
+    page: number;
+    limit: number;
+    hasMore: boolean;
+  };
+}
+```
+
+#### Create Override
+```http
+POST /api/feature-flags/overrides
+```
+
+**Authentication:** Admin required
+
+**Request Body:**
+```typescript
+{
+  featureName: string;
+  userId: string;
+  isEnabled: boolean;
+  reason?: string;
+  expiresAt?: string;      // Optional expiration date
+}
+```
+
+#### Update Override
+```http
+PUT /api/feature-flags/overrides/[id]
+```
+
+**Request Body:**
+```typescript
+{
+  isEnabled?: boolean;
+  reason?: string;
+  expiresAt?: string;
+}
+```
+
+#### Delete Override
+```http
+DELETE /api/feature-flags/overrides/[id]
+```
+
+**Authentication:** Admin required
+
+### Feature Flag Usage Analytics
+
+#### Get Usage Statistics
+```http
+GET /api/feature-flags/usage
+```
+
+**Authentication:** Admin required
+
+**Query Parameters:**
+```typescript
+{
+  featureName?: string;    // Filter by feature name
+  userId?: string;         // Filter by user ID
+  action?: string;         // Filter by action type
+  startDate?: string;      // Start date for filtering
+  endDate?: string;        // End date for filtering
+  page?: number;
+  limit?: number;
+}
+```
+
+**Response:**
+```typescript
+interface FeatureFlagUsageResponse {
+  success: true;
+  data: {
+    usage: FeatureFlagUsage[];
+    total: number;
+    page: number;
+    limit: number;
+    hasMore: boolean;
+    summary: {
+      totalEvents: number;
+      uniqueUsers: number;
+      topFeatures: Array<{
+        name: string;
+        usageCount: number;
+      }>;
+    };
+  };
+}
+```
+
+### Public Feature Flag Check
+
+#### Check Feature Flag Status
+```http
+GET /api/feature-flags/check/[name]
+```
+
+**Authentication:** Optional (user session if available)
+
+**Query Parameters:**
+```typescript
+{
+  userId?: string;         // Optional user ID for override checking
+}
+```
+
+**Response:**
+```typescript
+interface FeatureFlagCheckResponse {
+  success: true;
+  data: {
+    enabled: boolean;
+    rolloutPercentage: number;
+    hasOverride: boolean;
+    reason?: string;       // Reason for override if applicable
+  };
+}
+```
+
+#### Batch Check Feature Flags
+```http
+POST /api/feature-flags/check-batch
+```
+
+**Request Body:**
+```typescript
+{
+  features: string[];      // Array of feature names to check
+  userId?: string;         // Optional user ID for override checking
+}
+```
+
+**Response:**
+```typescript
+interface FeatureFlagBatchCheckResponse {
+  success: true;
+  data: {
+    [featureName: string]: {
+      enabled: boolean;
+      rolloutPercentage: number;
+      hasOverride: boolean;
+    };
+  };
+}
+```
+
+### Feature Flag Audit Log
+
+#### Get Audit History
+```http
+GET /api/feature-flags/audit
+```
+
+**Authentication:** Admin required
+
+**Query Parameters:**
+```typescript
+{
+  featureName?: string;    // Filter by feature name
+  action?: string;         // Filter by action type
+  changedBy?: string;      // Filter by user who made changes
+  startDate?: string;      // Start date for filtering
+  endDate?: string;        // End date for filtering
+  page?: number;
+  limit?: number;
+}
+```
+
+**Response:**
+```typescript
+interface FeatureFlagAuditResponse {
+  success: true;
+  data: {
+    auditLog: FeatureFlagAuditLog[];
+    total: number;
+    page: number;
+    limit: number;
+    hasMore: boolean;
+  };
+}
+```
+
+### Feature Flag Types
+
+```typescript
+interface FeatureFlag {
+  id: string;
+  name: string;
+  displayName: string;
+  description?: string;
+  category: string;
+  isEnabled: boolean;
+  rolloutPercentage: number;
+  targetAudience?: object;
+  dependencies?: string[];
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
+interface FeatureFlagOverride {
+  id: string;
+  featureFlagId: string;
+  userId: string;
+  isEnabled: boolean;
+  reason?: string;
+  createdAt: string;
+  createdBy?: string;
+  expiresAt?: string;
+}
+
+interface FeatureFlagUsage {
+  id: string;
+  featureFlagId: string;
+  userId?: string;
+  action: string;
+  metadata?: object;
+  createdAt: string;
+}
+
+interface FeatureFlagAuditLog {
+  id: string;
+  featureFlagId: string;
+  action: string;
+  oldValues?: object;
+  newValues?: object;
+  changedBy?: string;
+  reason?: string;
+  createdAt: string;
 }
 ```
 

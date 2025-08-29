@@ -530,6 +530,87 @@ CREATE INDEX idx_api_applications_status ON api_applications(status);
 CREATE INDEX idx_api_applications_developer ON api_applications(developer_email);
 ```
 
+### Feature Flags System
+
+#### feature_flags
+```sql
+CREATE TABLE feature_flags (
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name text NOT NULL UNIQUE, -- Unique identifier for the feature (e.g., 'social_features', 'gamification')
+    display_name text NOT NULL, -- Human-readable name (e.g., 'Social Features', 'Gamification System')
+    description text, -- Detailed description of what the feature does
+    category text NOT NULL DEFAULT 'general', -- Category for organization (e.g., 'social', 'gamification', 'analytics')
+    is_enabled boolean NOT NULL DEFAULT false, -- Whether the feature is currently enabled
+    rollout_percentage integer NOT NULL DEFAULT 100, -- Percentage of users who should see this feature (0-100)
+    target_audience jsonb DEFAULT '{}', -- JSON object defining target audience criteria
+    dependencies text[], -- Array of feature names this feature depends on
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+    updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+-- Indexes
+CREATE INDEX idx_feature_flags_category ON feature_flags(category);
+CREATE INDEX idx_feature_flags_enabled ON feature_flags(is_enabled);
+CREATE INDEX idx_feature_flags_name ON feature_flags(name);
+```
+
+#### feature_flag_overrides
+```sql
+CREATE TABLE feature_flag_overrides (
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    feature_flag_id uuid REFERENCES feature_flags(id) ON DELETE CASCADE NOT NULL,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    is_enabled boolean NOT NULL, -- Override value for this specific user
+    reason text, -- Reason for the override
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+    expires_at timestamp with time zone, -- Optional expiration date for temporary overrides
+
+    UNIQUE(feature_flag_id, user_id)
+);
+
+-- Indexes
+CREATE INDEX idx_feature_flag_overrides_user ON feature_flag_overrides(user_id);
+CREATE INDEX idx_feature_flag_overrides_feature ON feature_flag_overrides(feature_flag_id);
+```
+
+#### feature_flag_usage
+```sql
+CREATE TABLE feature_flag_usage (
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    feature_flag_id uuid REFERENCES feature_flags(id) ON DELETE CASCADE NOT NULL,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+    action text NOT NULL, -- Action performed (e.g., 'viewed', 'used', 'interacted')
+    metadata jsonb DEFAULT '{}', -- Additional context about the usage
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Indexes
+CREATE INDEX idx_feature_flag_usage_feature ON feature_flag_usage(feature_flag_id);
+CREATE INDEX idx_feature_flag_usage_user ON feature_flag_usage(user_id);
+CREATE INDEX idx_feature_flag_usage_created ON feature_flag_usage(created_at);
+```
+
+#### feature_flag_audit_log
+```sql
+CREATE TABLE feature_flag_audit_log (
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    feature_flag_id uuid REFERENCES feature_flags(id) ON DELETE CASCADE NOT NULL,
+    action text NOT NULL, -- 'created', 'updated', 'deleted', 'enabled', 'disabled'
+    old_values jsonb, -- Previous state of the feature flag
+    new_values jsonb, -- New state of the feature flag
+    changed_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+    reason text, -- Reason for the change
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Indexes
+CREATE INDEX idx_feature_flag_audit_feature ON feature_flag_audit_log(feature_flag_id);
+CREATE INDEX idx_feature_flag_audit_created ON feature_flag_audit_log(created_at);
+```
+
 ---
 
 ## Indexes & Performance
@@ -695,6 +776,84 @@ CREATE POLICY "Admins can access all restaurants" ON restaurants
     );
 ```
 
+### Feature Flags Security
+
+#### Feature Flags Access Control
+```sql
+-- Public read access to enabled feature flags
+CREATE POLICY "Public can view enabled feature flags" ON feature_flags
+    FOR SELECT USING (is_enabled = true);
+
+-- Admin users can manage all feature flags
+CREATE POLICY "Admins can manage feature flags" ON feature_flags
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM user_profiles up 
+            WHERE up.id = auth.uid() 
+            AND up.user_role = 'admin'
+        )
+    );
+```
+
+#### Feature Flag Overrides Security
+```sql
+-- Users can only view their own overrides
+CREATE POLICY "Users can view their own overrides" ON feature_flag_overrides
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- Users can manage their own overrides
+CREATE POLICY "Users can manage their own overrides" ON feature_flag_overrides
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Admins can manage all overrides
+CREATE POLICY "Admins can manage all overrides" ON feature_flag_overrides
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM user_profiles up 
+            WHERE up.id = auth.uid() 
+            AND up.user_role = 'admin'
+        )
+    );
+```
+
+#### Feature Flag Usage Security
+```sql
+-- Users can only view their own usage data
+CREATE POLICY "Users can view their own usage" ON feature_flag_usage
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- System can insert usage data for any user
+CREATE POLICY "System can log usage" ON feature_flag_usage
+    FOR INSERT WITH CHECK (true);
+
+-- Admins can view all usage data
+CREATE POLICY "Admins can view all usage" ON feature_flag_usage
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM user_profiles up 
+            WHERE up.id = auth.uid() 
+            AND up.user_role = 'admin'
+        )
+    );
+```
+
+#### Feature Flag Audit Log Security
+```sql
+-- Only admins can view audit logs
+CREATE POLICY "Admins can view audit logs" ON feature_flag_audit_log
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM user_profiles up 
+            WHERE up.id = auth.uid() 
+            AND up.user_role = 'admin'
+        )
+    );
+
+-- System can insert audit logs
+CREATE POLICY "System can create audit logs" ON feature_flag_audit_log
+    FOR INSERT WITH CHECK (true);
+```
+
 ---
 
 ## Database Functions
@@ -856,6 +1015,111 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 ```
 
+### Feature Flags Functions
+
+#### check_feature_flag_enabled
+```sql
+CREATE OR REPLACE FUNCTION check_feature_flag_enabled(
+    p_feature_name text,
+    p_user_id uuid DEFAULT NULL
+) RETURNS boolean AS $$
+DECLARE
+    v_feature_record record;
+    v_override_record record;
+    v_rollout_enabled boolean := false;
+BEGIN
+    -- Get the feature flag record
+    SELECT * INTO v_feature_record
+    FROM feature_flags
+    WHERE name = p_feature_name;
+
+    -- If feature doesn't exist, return false
+    IF NOT FOUND THEN
+        RETURN false;
+    END IF;
+
+    -- If feature is not enabled globally, return false
+    IF NOT v_feature_record.is_enabled THEN
+        RETURN false;
+    END IF;
+
+    -- Check for user-specific override
+    IF p_user_id IS NOT NULL THEN
+        SELECT * INTO v_override_record
+        FROM feature_flag_overrides
+        WHERE feature_flag_id = v_feature_record.id
+          AND user_id = p_user_id
+          AND (expires_at IS NULL OR expires_at > NOW());
+
+        IF FOUND THEN
+            RETURN v_override_record.is_enabled;
+        END IF;
+    END IF;
+
+    -- Check rollout percentage
+    IF v_feature_record.rollout_percentage = 100 THEN
+        RETURN true;
+    ELSIF v_feature_record.rollout_percentage = 0 THEN
+        RETURN false;
+    ELSE
+        -- Use user ID hash for consistent rollout distribution
+        IF p_user_id IS NOT NULL THEN
+            v_rollout_enabled := (abs(hashtext(p_user_id::text)) % 100) < v_feature_record.rollout_percentage;
+        ELSE
+            -- For anonymous users, use random distribution
+            v_rollout_enabled := random() * 100 < v_feature_record.rollout_percentage;
+        END IF;
+        RETURN v_rollout_enabled;
+    END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+#### log_feature_flag_usage
+```sql
+CREATE OR REPLACE FUNCTION log_feature_flag_usage(
+    p_feature_name text,
+    p_user_id uuid,
+    p_action text DEFAULT 'used',
+    p_metadata jsonb DEFAULT '{}'
+) RETURNS void AS $$
+DECLARE
+    v_feature_id uuid;
+BEGIN
+    -- Get feature flag ID
+    SELECT id INTO v_feature_id
+    FROM feature_flags
+    WHERE name = p_feature_name;
+
+    -- Only log if feature exists
+    IF FOUND THEN
+        INSERT INTO feature_flag_usage (
+            feature_flag_id,
+            user_id,
+            action,
+            metadata
+        ) VALUES (
+            v_feature_id,
+            p_user_id,
+            p_action,
+            p_metadata
+        );
+    END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+#### update_feature_flag_updated_at
+```sql
+CREATE OR REPLACE FUNCTION update_feature_flag_updated_at()
+RETURNS trigger AS $$
+BEGIN
+    NEW.updated_at = timezone('utc'::text, now());
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
 ---
 
 ## Triggers & Automation
@@ -933,6 +1197,73 @@ CREATE TRIGGER trigger_validate_rating_edit
     BEFORE UPDATE ON ratings
     FOR EACH ROW
     EXECUTE FUNCTION validate_rating_edit();
+```
+
+### Feature Flags Triggers
+
+#### feature_flags_updated_at_trigger
+```sql
+CREATE TRIGGER feature_flags_updated_at_trigger
+    BEFORE UPDATE ON feature_flags
+    FOR EACH ROW
+    EXECUTE FUNCTION update_feature_flag_updated_at();
+```
+
+#### feature_flag_audit_trigger
+```sql
+CREATE OR REPLACE FUNCTION audit_feature_flag_changes()
+RETURNS trigger AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO feature_flag_audit_log (
+            feature_flag_id,
+            action,
+            new_values,
+            changed_by
+        ) VALUES (
+            NEW.id,
+            'created',
+            row_to_json(NEW),
+            NEW.created_by
+        );
+        RETURN NEW;
+    ELSIF TG_OP = 'UPDATE' THEN
+        INSERT INTO feature_flag_audit_log (
+            feature_flag_id,
+            action,
+            old_values,
+            new_values,
+            changed_by
+        ) VALUES (
+            NEW.id,
+            'updated',
+            row_to_json(OLD),
+            row_to_json(NEW),
+            NEW.updated_by
+        );
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        INSERT INTO feature_flag_audit_log (
+            feature_flag_id,
+            action,
+            old_values,
+            changed_by
+        ) VALUES (
+            OLD.id,
+            'deleted',
+            row_to_json(OLD),
+            NULL
+        );
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER feature_flag_audit_trigger
+    AFTER INSERT OR UPDATE OR DELETE ON feature_flags
+    FOR EACH ROW
+    EXECUTE FUNCTION audit_feature_flag_changes();
 ```
 
 ---
